@@ -86,6 +86,9 @@ h1 .ai{background:linear-gradient(90deg,#1C7FD6,#39B7F7 60%,#7FD3FF);-webkit-bac
 .info{flex:1;min-width:0}
 .nm{font-weight:600;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meta{font-size:12.5px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.meta>span:first-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheetbox{background:linear-gradient(135deg,#EAF6FF,#E3FAF5);border:2px solid #CDEBFA;border-radius:20px;padding:16px;margin-top:16px;font-size:14px;line-height:1.7}
+.sheetbox a{color:var(--blue-d);font-weight:600}
 .tag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
 .tag.ok{background:var(--ok-bg);color:#0E9C83}
 .tag.late{background:var(--late-bg);color:#B97400}
@@ -229,7 +232,7 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
 
   <section class="panel">
     <div class="toolbar">
-      <label class="search">🔍<input id="q" placeholder="ค้นหาชื่อ / รหัส / ชื่อเล่น" autocomplete="off"></label>
+      <label class="search">🔍<input id="q" placeholder="ค้นหาชื่อ / หน่วยงาน / รหัส" autocomplete="off"></label>
       <div class="chips" id="chips">
         <button class="chip on" data-f="all">ทั้งหมด</button>
         <button class="chip" data-f="wait">ยังไม่เช็ค</button>
@@ -249,8 +252,15 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
   <!-- ADMIN -->
   <details class="panel admin adminOnly" id="adminBox" style="display:none">
     <summary>🛠️ สำหรับผู้สอน <span class="chev">▾</span></summary>
+    <div class="sheetbox sheetOnly" style="display:none">
+      <b>📊 เชื่อมต่อกับ Google Sheets แล้ว</b><br>
+      • แก้รายชื่อผู้เรียนที่แท็บ <b>Roster</b> (id, ชื่อ-นามสกุล, หน่วยงาน)<br>
+      • แก้ชื่อคลาส / เวลาเริ่ม / นาทีที่ยอมให้สายได้ที่แท็บ <b>Settings</b> (title, start, grace)<br>
+      • ผลการเช็คชื่อบันทึกที่แท็บ <b>Attendance</b> · เว็บจะดึงข้อมูลใหม่อัตโนมัติ<br>
+      <a class="sheetLink" href="#" target="_blank" rel="noopener">เปิด Google Sheet ↗</a>
+    </div>
     <div class="grid2">
-      <div class="box">
+      <div class="box localOnly">
         <h3>📥 นำเข้ารายชื่อ</h3>
         <p class="h">รองรับ .csv .xlsx .xls — ระบบจะหาคอลัมน์ “ชื่อ / Name”, “รหัส / ID”, “ชื่อเล่น” ให้อัตโนมัติ</p>
         <div class="drop" id="drop">
@@ -266,6 +276,7 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
         </div>
       </div>
       <div class="box">
+        <div class="localOnly">
         <h3>⚙️ ตั้งค่าคลาส</h3>
         <p class="h">ใช้คำนวณว่าใครมาตรงเวลา / มาสาย</p>
         <div class="row">
@@ -276,6 +287,7 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
           <label class="fld">สายได้ไม่เกิน (นาที)<input type="number" min="0" max="180" id="cfgLate"></label>
         </div>
         <div class="row"><button class="btn btn-p" id="saveCfg">💾 บันทึกการตั้งค่า</button></div>
+        </div>
 
         <h3 style="margin-top:20px">📤 ส่งออก / Google Sheets</h3>
         <p class="h">ข้อมูลของวันที่ที่เลือกอยู่ด้านบน</p>
@@ -284,7 +296,7 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
           <button class="btn btn-s" id="copyTsv">📋 คัดลอกไปวางใน Google Sheets</button>
         </div>
         <div class="note">กด “คัดลอก” แล้วไปที่ Google Sheets คลิกช่อง A1 แล้วกด Ctrl/⌘+V ได้ทันที</div>
-        <div class="row" style="margin-top:18px">
+        <div class="row localOnly" style="margin-top:18px">
           <button class="btn btn-d" id="clearDay">ล้างการเช็คชื่อของวันนี้</button>
           <button class="btn btn-d" id="clearRoster">ลบรายชื่อทั้งหมด</button>
         </div>
@@ -344,22 +356,27 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
 
 <div class="toast" id="toast"></div>
 
+<script src="config.js"></script>
 <script>
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
 const DEF = { className:'Claude AI', startTime:'09:00', lateMin:15 };
 
-/* ============ ตั้งค่าสำหรับเอาขึ้นเซิร์ฟเวอร์เอง ============
-   GOOGLE_SCRIPT_URL : วาง URL ของ Google Apps Script (Web app) ที่ได้จากไฟล์ google-apps-script.gs
-                       เว้นว่างไว้ = ไม่ส่งข้อมูลไป Google Sheets
-   ADMIN_PIN         : รหัสเข้าโหมดผู้สอน — เปิดเว็บแล้วต่อท้าย URL ด้วย #admin
-   SEED_ROSTER       : รายชื่อเริ่มต้น (ใช้ตอนเปิดเว็บครั้งแรกในแต่ละเครื่อง) */
-const GOOGLE_SCRIPT_URL = '';
+/* ============ ตั้งค่า — แก้ได้ที่ไฟล์ config.js ============ */
+const CFG = window.APP_CONFIG || {};
+const GOOGLE_SCRIPT_URL = String(CFG.GOOGLE_SCRIPT_URL||'').trim();
+const SHEET_URL = String(CFG.SHEET_URL||'').trim();
+const SYNC_MS = Math.max(5000, Number(CFG.SYNC_SECONDS||15)*1000);
 
 /* ============ เวอร์ชัน — อัปเดตทุกครั้งที่แก้เว็บ (เวอร์ชันใหม่ไว้บนสุด) ============ */
 const GITHUB_REPO = 'production719/Check_in_AI';
 const CHANGELOG = [
+  { v:'1.3.0', date:'2026-11-14', items:[
+    'เชื่อมต่อ Google Sheets: ดึงรายชื่อจากแท็บ Roster และเวลาเริ่มคลาสจากแท็บ Settings',
+    'กดเช็คชื่อแล้วบันทึกลงแท็บ Attendance ทันที พร้อมลายเซ็น (เก็บไฟล์ใน Google Drive)',
+    'ซิงก์ข้อมูลระหว่างหลายเครื่องอัตโนมัติ และแสดงหน่วยงานของผู้เรียน',
+    'แยกการตั้งค่าไว้ในไฟล์ config.js แก้ได้โดยไม่ต้องแตะโค้ดหลัก' ]},
   { v:'1.2.0', date:'2026-11-14', items:[
     'แสดงเลขเวอร์ชันบนหน้าเว็บ (มุมขวาบนและท้ายหน้า) กดดูประวัติการอัปเดตได้',
     'เชื่อมกับ GitHub: แสดงการอัปเดตล่าสุด (commit) จาก repository',
@@ -375,20 +392,27 @@ const CHANGELOG = [
     'นำเข้ารายชื่อจาก CSV / Excel, ส่งออก CSV, คัดลอกไป Google Sheets' ]},
 ];
 const APP_VERSION = CHANGELOG[0].v;
-const ADMIN_PIN = '1234';
+const ADMIN_PIN = String(CFG.ADMIN_PIN||'1234');
+/* รายชื่อสำรอง — ใช้เฉพาะตอนยังไม่ได้เชื่อม Google Sheets */
 const SEED_ROSTER = [
-  'นายภณธกร วงศ์เจริญ','นางสาววิภาดา พลาธนพร','นางสาววราภรณ์ หวานล้ำ','นายนรพนธ์ จิรัฐิติกาลพงศ์',
-  'นางสาวจิดาภา ทองเกิด','นางสาวธนวรรณ ตั้งตรงพานิช','นายคณาธิป จำนงค์','นางสาวรัตติยากร ฉายหิรัญ',
-  'นายวิชยุตม์ กีรติธนาภรณ์','นางสาวจิตรา คำแหง','นายสิริวรรณ รอดศิริ','นายวิศรุต สุดสัดย์',
-  'นายกิตติธัช ธูปถมพงศ์','นางสาวณัฏชา แสวงหอม','นายคงติภูมิ มณีโชค','นางสาวสุชาดา เอี่ยมสำอางค์',
-  'นางสาวพิชญา พิสุทธิ์พิเชฏฐ์','นางสาววันทนา จุตาลานนท์','นางสาวระวีวรรณ การภักดี','นางสาวพรพิมล ผลเพิ่ม',
-  'นางสาวพรพิมล ผมเพิ่ม','นางสาวอรณิชา ครองศักดิ์ศิริ','นางสาวนัทธมน พุทธพรม'
+  ['a01','ภณธกร วงศ์เจริญ','เบทาโกร'],['a02','วิภาดา พลาธนพร','Foodle Noodle Co., Ltd.'],['a03','สิริวรรณ รอดศิริ','Foodle Noodle Co., Ltd.'],
+  ['a04','วิศรุต สุดสัตย์','Foodle Noodle Co., Ltd.'],['a05','กิตติธัช ธูปถมพงศ์','Foodle Noodle Co., Ltd.'],['a06','วราภรณ์ หวานล้ำ','บริษัท โอชาฟูดแพ็ค จำกัด'],
+  ['a07','ณัฏชา แสวงหอม','บริษัท โอชาฟูดแพ็ค จำกัด'],['a08','นรพนธ์ จิรัฐิติกาลพงศ์','บริษัท ซีเอ็ม พรีเมี่ยม ไรซ์ จำกัด'],['a09','คงติภูมิ มณีโชค','บริษัท ซีเอ็ม พรีเมี่ยม ไรซ์ จำกัด'],
+  ['a10','จิดาภา ทองเกิด','เทพผดุงพรมะพร้าว จำกัด'],['a11','สุชาดา เอี่ยมสำอางค์','เทพผดุงพรมะพร้าว จำกัด'],['a12','พิชญา พิสุทธิ์พิเชฎฐ์','เทพผดุงพรมะพร้าว จำกัด'],
+  ['a13','วันทนา จุตาลานนท์','เทพผดุงพรมะพร้าว จำกัด'],['a14','ธนวรรณ ตั้งตรงพานิช','บริษัท โอชาฟูดแพ็ค จำกัด'],['a15','ระวีวรรณ การภักดี','บริษัท โอชาฟูดแพ็ค จำกัด'],
+  ['a16','คณาธิป จำนงค์','บริษัท ลาโต้ ฟู้ดแอนด์ดริ้งส์ จำกัด'],['a17','พรพิมล ผลเพิ่ม','บริษัท ลาโต้ ฟู้ดแอนด์ดริ้งส์ จำกัด'],['a18','รัตติยากร ฉายหิรัญ','บริษัท สยาม คอนซูมเมอร์ โปรดักส์ จำกัด'],
+  ['a19','วิชยุตม์ กีรติธนาภรณ์','บริษัท เมอร์เดียนท์ จำกัด'],['a20','จิตรา คำแหง','บริษัท โอชาฟูดแพ็ค จำกัด'],['a21','อรณิชา ครองศักดิ์ศิริ','บริษัท โอชาฟูดแพ็ค จำกัด'],
+  ['a22','นัทธมน พุทธพรม','บริษัท โอชาฟูดแพ็ค จำกัด']
 ];
 
-function sendToSheet(row){
-  if (!GOOGLE_SCRIPT_URL) return;
-  fetch(GOOGLE_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(row) })
-    .catch(e=>{ console.warn('ส่งไป Google Sheets ไม่สำเร็จ', e); toast('บันทึกในเครื่องแล้ว แต่ส่งไป Google Sheets ไม่สำเร็จ'); });
+/* ---------- Google Sheets (Apps Script Web app) ---------- */
+async function sheetGet(date){
+  const r=await fetch(`${GOOGLE_SCRIPT_URL}?date=${encodeURIComponent(date)}&t=${Date.now()}`,{redirect:'follow'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j=await r.json(); if(!j.ok) throw new Error(j.error||'sheet error'); return j;
+}
+async function sheetPost(body){
+  await fetch(GOOGLE_SCRIPT_URL,{ method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body) });
 }
 const COLORS = ['#5AB8F7','#4FD1C5','#8C9EFF','#FF9EC7','#FFB86B','#6FCF97','#7FB3FF','#B39DFF'];
 const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -436,10 +460,21 @@ async function retry(fn){ try{ return await fn(); }catch(e){ if(e&&e.code==='una
 
 const ops = {
   async putCheckin(sid, data){
+    if (S.mode==='sheet'){
+      S.checkins={...S.checkins,[sid]:data}; render();
+      const li=lateInfo(data), s=S.roster.find(x=>x.id===sid)||{};
+      await sheetPost({ action:'checkin', date:S.date, id:sid, name:s.name||'', time:hhmm(new Date(data.time)), timestamp:data.time,
+        status: li&&li.late?'มาสาย':'มาตรงเวลา', lateMinutes: li&&li.late?li.diff:0, signature:data.sig });
+      setTimeout(sheetLoad,2500); return;
+    }
     if (S.mode==='remote') return retry(()=>S.db.doc(`days/${S.date}/checkins/${sid}`).set(data));
     (L.days[S.date] ||= {})[sid]=data; lsSave(); localPush();
   },
   async delCheckin(sid, date=S.date){
+    if (S.mode==='sheet'){
+      const c={...S.checkins}; delete c[sid]; S.checkins=c; render();
+      await sheetPost({ action:'delete', date, id:sid }); setTimeout(sheetLoad,2500); return;
+    }
     if (S.mode==='remote') return retry(()=>S.db.doc(`days/${date}/checkins/${sid}`).delete());
     if (L.days[date]) delete L.days[date][sid]; lsSave(); localPush();
   },
@@ -460,6 +495,7 @@ const ops = {
 
 function subscribeCheckins(){
   if (unsubCheck){ unsubCheck(); unsubCheck=null; }
+  if (S.mode==='sheet'){ S.checkins={}; render(); sheetLoad(); return; }
   if (S.mode!=='remote'){ localPush(); return; }
   S.checkins={}; render();
   unsubCheck = S.db.collection(`days/${S.date}/checkins`).onSnapshot(snap=>{
@@ -497,8 +533,6 @@ async function boot(){
     }, err=>console.error(err));
     subscribeCheckins();
   } else {
-    S.mode='local'; lsLoad();
-    if (!L.seeded){ L.seeded=true; SEED_ROSTER.forEach((name,i)=>{ L.roster['seed'+(i+1)]={name,code:'',nick:'',order:i+1}; }); lsSave(); }
     const checkAdmin = async ()=>{
       if (location.hash!=='#admin'){ S.isAdmin=false; }
       else if (sessionStorage.getItem('adm')==='1'){ S.isAdmin=true; }
@@ -506,14 +540,45 @@ async function boot(){
       setMode(); render();
     };
     window.addEventListener('hashchange', checkAdmin);
-    setMode(); fillCfg(); localPush(); checkAdmin();
+    if (GOOGLE_SCRIPT_URL){
+      S.mode='sheet'; setMode(); checkAdmin();
+      await sheetLoad(true);
+      setInterval(()=>{ if(!document.hidden) sheetLoad(); }, SYNC_MS);
+      document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) sheetLoad(); });
+    } else {
+      S.mode='local'; lsLoad();
+      if (!L.seeded2){ L.seeded2=true; L.roster={}; SEED_ROSTER.forEach(([id,name,org],i)=>{ L.roster[id]={name,org,code:'',nick:'',order:i+1}; }); lsSave(); }
+      setMode(); fillCfg(); localPush(); checkAdmin();
+    }
   }
+}
+let sheetBusy=false, sheetOk=false;
+async function sheetLoad(first){
+  if (sheetBusy) return; sheetBusy=true;
+  const want=S.date;
+  try{
+    const j=await sheetGet(want);
+    if (want!==S.date) return;
+    const st=j.settings||{};
+    S.config={...DEF, className:st.title||DEF.className, startTime:st.start||DEF.startTime, lateMin:Number(st.grace??DEF.lateMin)};
+    S.roster=(j.roster||[]).map((r,i)=>({id:r.id, name:r.name, org:r.org||'', code:'', nick:'', order:i+1}));
+    const m={}; Object.entries(j.checkins||{}).forEach(([id,c])=>{ m[id]={ time:c.time, sig:c.sig||'', sigLink:c.sigLink||'' }; });
+    S.checkins=m; sheetOk=true; S.readOnly=false; banner(''); fillCfg(); render();
+  }catch(e){
+    console.error(e);
+    banner(sheetOk ? 'เชื่อมต่อ Google Sheets ไม่ได้ชั่วคราว ข้อมูลที่เห็นอาจไม่อัปเดต' : 'โหลดข้อมูลจาก Google Sheets ไม่สำเร็จ — ตรวจสอบ URL ใน config.js และการ Deploy Apps Script');
+    if (first && !sheetOk){ S.roster=SEED_ROSTER.map(([id,name,org],i)=>({id,name,org,code:'',nick:'',order:i+1})); S.readOnly=true; render(); }
+  }finally{ sheetBusy=false; }
 }
 function setMode(){
   const b=$('#modeBadge'); b.classList.remove('loading','local');
   if (S.mode==='remote'){ $('#modeText').textContent = S.isAdmin ? 'ออนไลน์ · โหมดผู้สอน' : 'ออนไลน์ · บันทึกแบบเรียลไทม์'; }
+  else if (S.mode==='sheet'){ $('#modeText').textContent='เชื่อมต่อ Google Sheets · ซิงก์อัตโนมัติ'; }
   else { b.classList.add('local'); $('#modeText').textContent='โหมดเครื่องเดียว (เก็บในเบราว์เซอร์นี้)'; }
   document.querySelectorAll('.adminOnly').forEach(el=>el.style.display = S.isAdmin ? '' : 'none');
+  document.querySelectorAll('.localOnly').forEach(el=>el.style.display = S.mode==='sheet' ? 'none' : '');
+  document.querySelectorAll('.sheetOnly').forEach(el=>el.style.display = S.mode==='sheet' ? '' : 'none');
+  if (SHEET_URL) document.querySelectorAll('.sheetLink').forEach(a=>a.href=SHEET_URL);
 }
 function fillCfg(){
   const c=S.config;
@@ -559,7 +624,7 @@ function render(){
     if (S.filter==='wait' && li) return false;
     if (S.filter==='done' && !li) return false;
     if (S.filter==='late' && !(li&&li.late)) return false;
-    if (q && ![s.name,s.code,s.nick].some(v=>norm(v).includes(q))) return false;
+    if (q && ![s.name,s.code,s.nick,s.org].some(v=>norm(v).includes(q))) return false;
     return true;
   });
 
@@ -575,7 +640,7 @@ function render(){
   const isToday = S.date===dateKey(new Date());
   list.innerHTML = items.map((s,i)=>{
     const ci=S.checkins[s.id], li=lateInfo(ci), sig=ci?safeSig(ci.sig):'';
-    const sub=[s.code?`รหัส ${esc(s.code)}`:'', s.nick?`(${esc(s.nick)})`:''].filter(Boolean).join(' ');
+    const sub=[s.org?esc(s.org):'', s.code?`รหัส ${esc(s.code)}`:'', s.nick?`(${esc(s.nick)})`:''].filter(Boolean).join(' · ');
     let right;
     if (li){
       right = `${sig?`<img class="sig" src="${sig}" data-view="${esc(s.id)}" alt="ลายเซ็น">`:''}`;
@@ -583,7 +648,7 @@ function render(){
       right = `<button class="btn btn-p" data-in="${esc(s.id)}">เช็คชื่อ</button>`;
     } else right = `<span class="tag" style="background:#F0F4F9;color:#8AA1BD">ยังไม่มา</span>`;
     const status = li ? `<span class="tag ${li.late?'late':'ok'}">${li.late?'⏰ สาย':'✓ มาแล้ว'} · ${li.time} น.</span>` : '';
-    const del = S.isAdmin ? `<button class="x" title="ลบรายชื่อ" data-del="${esc(s.id)}">✕</button>` : '';
+    const del = S.isAdmin && S.mode!=='sheet' ? `<button class="x" title="ลบรายชื่อ" data-del="${esc(s.id)}">✕</button>` : '';
     return `<div class="card ${li?(li.late?'isLate':'done'):''}" style="animation-delay:${Math.min(i,20)*15}ms">
       <div class="av" style="background:${colorFor(s.name)}">${li?'✓':esc(initial(s.name))}</div>
       <div class="info"><div class="nm">${esc(s.name)}</div><div class="meta">${sub?`<span>${sub}</span>`:''}${status}</div></div>
@@ -661,9 +726,6 @@ $('#mOk').addEventListener('click', async ()=>{
   const data={ time:now.toISOString(), sig:exportSig(), name:s.name, code:s.code||'' };
   try{
     await ops.putCheckin(s.id, data);
-    const li0=lateInfo(data);
-    sendToSheet({ date:S.date, time:hhmm(now), timestamp:data.time, name:s.name, code:s.code||'', nick:s.nick||'',
-      status: li0&&li0.late?'มาสาย':'มาตรงเวลา', lateMinutes: li0&&li0.late?li0.diff:0, className:S.config.className, signature:data.sig });
     closeCheckin(); celebrate();
     const li=lateInfo(data); toast(`เช็คชื่อสำเร็จ! ${s.name} มาเวลา ${hhmm(now)} น.${li&&li.late?' (สาย)':''}`);
   }catch(err){ handleWriteErr(err); }
