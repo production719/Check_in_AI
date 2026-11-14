@@ -146,6 +146,18 @@ canvas#pad{display:block;width:100%;height:210px;touch-action:none;cursor:crossh
 .bigsig{width:100%;border-radius:16px;background:#F7FBFF;border:1px solid var(--line);margin-top:12px}
 
 /* ---------- toast / misc ---------- */
+.ver{position:fixed;top:14px;right:14px;z-index:40;display:inline-flex;align-items:center;gap:6px;border:0;background:rgba(255,255,255,.92);color:var(--blue-d);font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(40,120,200,.15);backdrop-filter:blur(4px)}
+.ver:hover{background:#fff;transform:translateY(-1px)}
+.ver .vdot{width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,#7FD3FF,#1C7FD6)}
+.cl{max-height:52vh;overflow:auto;margin-top:14px;padding-right:4px}
+.cl-item{border-left:3px solid var(--sky2);padding:2px 0 12px 14px;margin-left:6px;position:relative}
+.cl-item::before{content:'';position:absolute;left:-8px;top:6px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--blue)}
+.cl-item.cur::before{background:var(--blue)}
+.cl-item h4{margin:0;font-family:'Mali';font-size:16px;color:var(--navy);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cl-item .dt{font-size:12px;color:var(--muted);font-family:'Prompt';font-weight:400}
+.cl-item ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:#3D5A80;line-height:1.6}
+.vbuild{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+.vbuild a,footer a{color:var(--blue-d)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(30px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:16px;font-size:14px;opacity:0;transition:.3s;z-index:80;max-width:90vw;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .banner{margin-top:14px;background:#FFF8E8;border:1.5px solid #FBE2B4;color:#8A5A00;border-radius:16px;padding:10px 14px;font-size:13.5px;display:none}
@@ -280,7 +292,19 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
     </div>
   </details>
 
-  <footer>☁️ Claude AI Class · ระบบเช็คชื่อออนไลน์</footer>
+  <footer>☁️ Claude AI Class · ระบบเช็คชื่อออนไลน์ · <a href="#" id="footVer">v—</a> · <a href="https://github.com/production719/Check_in_AI" target="_blank" rel="noopener">GitHub</a></footer>
+</div>
+
+<button class="ver" id="verBtn" title="ดูประวัติเวอร์ชัน"><span class="vdot"></span><span id="verTxt">v—</span></button>
+<div class="ov" id="ov3">
+  <div class="modal">
+    <svg class="mc" viewBox="0 0 200 120"><use href="#cloud"/></svg>
+    <h2>ประวัติเวอร์ชัน</h2>
+    <div class="who" id="verNow"></div>
+    <div class="cl" id="clList"></div>
+    <div class="vbuild" id="vBuild"></div>
+    <div class="mact"><button class="btn btn-p" id="verClose" style="margin-left:auto">ปิด</button></div>
+  </div>
 </div>
 
 <!-- check-in modal -->
@@ -332,6 +356,25 @@ const DEF = { className:'Claude AI', startTime:'09:00', lateMin:15 };
    ADMIN_PIN         : รหัสเข้าโหมดผู้สอน — เปิดเว็บแล้วต่อท้าย URL ด้วย #admin
    SEED_ROSTER       : รายชื่อเริ่มต้น (ใช้ตอนเปิดเว็บครั้งแรกในแต่ละเครื่อง) */
 const GOOGLE_SCRIPT_URL = '';
+
+/* ============ เวอร์ชัน — อัปเดตทุกครั้งที่แก้เว็บ (เวอร์ชันใหม่ไว้บนสุด) ============ */
+const GITHUB_REPO = 'production719/Check_in_AI';
+const CHANGELOG = [
+  { v:'1.2.0', date:'2026-11-14', items:[
+    'แสดงเลขเวอร์ชันบนหน้าเว็บ (มุมขวาบนและท้ายหน้า) กดดูประวัติการอัปเดตได้',
+    'เชื่อมกับ GitHub: แสดงการอัปเดตล่าสุด (commit) จาก repository',
+    'เผยแพร่ผ่าน GitHub Pages' ]},
+  { v:'1.1.0', date:'2026-11-14', items:[
+    'เวอร์ชันสำหรับเอาขึ้นเซิร์ฟเวอร์เอง (ไฟล์ HTML ไฟล์เดียว)',
+    'ใส่รายชื่อผู้เรียนเริ่มต้น 23 คน',
+    'โหมดผู้สอนด้วย #admin + รหัส PIN',
+    'ส่งข้อมูลเช็คชื่อและลายเซ็นเข้า Google Sheets ผ่าน Apps Script' ]},
+  { v:'1.0.0', date:'2026-11-14', items:[
+    'เปิดตัวระบบเช็คชื่อคลาส Claude AI ธีมขาว-ฟ้า ก้อนเมฆ',
+    'เช็คชื่อพร้อมลายเซ็น บันทึกเวลาอัตโนมัติ คำนวณตรงเวลา/สาย',
+    'นำเข้ารายชื่อจาก CSV / Excel, ส่งออก CSV, คัดลอกไป Google Sheets' ]},
+];
+const APP_VERSION = CHANGELOG[0].v;
 const ADMIN_PIN = '1234';
 const SEED_ROSTER = [
   'นายภณธกร วงศ์เจริญ','นางสาววิภาดา พลาธนพร','นางสาววราภรณ์ หวานล้ำ','นายนรพนธ์ จิรัฐิติกาลพงศ์',
@@ -799,7 +842,34 @@ $('#copyTsv').addEventListener('click', async ()=>{
   catch(e){ toast('คัดลอกไม่สำเร็จ'); }
 });
 
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeCheckin(); $('#ov2').classList.remove('show'); } });
+/* ================= version ================= */
+function initVersion(){
+  $('#verTxt').textContent='v'+APP_VERSION; $('#footVer').textContent='v'+APP_VERSION;
+  document.title = `เช็คชื่อคลาส Claude AI · v${APP_VERSION}`;
+  $('#verNow').textContent = `เวอร์ชันปัจจุบัน v${APP_VERSION} · อัปเดต ${thaiDate(CHANGELOG[0].date)}`;
+  $('#clList').innerHTML = CHANGELOG.map((c,i)=>`<div class="cl-item ${i===0?'cur':''}"><h4>v${esc(c.v)} ${i===0?'<span class="tag ok">ล่าสุด</span>':''}<span class="dt">${esc(thaiDate(c.date))}</span></h4><ul>${c.items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`).join('');
+  const open=e=>{ e&&e.preventDefault(); $('#ov3').classList.add('show'); loadBuild(); };
+  $('#verBtn').addEventListener('click',open); $('#footVer').addEventListener('click',open);
+  $('#verClose').addEventListener('click',()=>$('#ov3').classList.remove('show'));
+  $('#ov3').addEventListener('click',e=>{ if(e.target.id==='ov3') $('#ov3').classList.remove('show'); });
+}
+let buildLoaded=false;
+async function loadBuild(){
+  if (buildLoaded || !GITHUB_REPO) return; buildLoaded=true;
+  const el=$('#vBuild'); el.textContent='กำลังดึงข้อมูลจาก GitHub…';
+  try{
+    const r=await fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1`);
+    if(!r.ok) throw new Error(r.status);
+    const [c]=await r.json(); const d=new Date(c.commit.committer.date);
+    el.innerHTML='';
+    el.append('อัปเดตล่าสุดบน GitHub: ');
+    const a=document.createElement('a'); a.href=c.html_url; a.target='_blank'; a.rel='noopener'; a.textContent=c.sha.slice(0,7); el.append(a);
+    el.append(` · ${thaiDate(dateKey(d))} ${hhmm(d)} น. · “${String(c.commit.message).split('\n')[0]}”`);
+  }catch(e){ el.innerHTML=''; const a=document.createElement('a'); a.href=`https://github.com/${GITHUB_REPO}`; a.target='_blank'; a.rel='noopener'; a.textContent='ดูโค้ดบน GitHub'; el.append(a); }
+}
+initVersion();
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeCheckin(); $('#ov2').classList.remove('show'); $('#ov3').classList.remove('show'); } });
 
 boot();
 })();
