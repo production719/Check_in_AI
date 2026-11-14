@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เช็คชื่อคลาส Claude AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --sky:#EAF6FF; --sky2:#D4EEFF; --blue:#3AA7F5; --blue-d:#1C7FD6; --navy:#1E3A5F; --muted:#6B83A3;
+  --white:#fff; --ok:#22C3A6; --ok-bg:#E3FAF5; --late:#F5A524; --late-bg:#FFF4DE; --pink:#FF9EC7;
+  --line:#DCEBF8; --shadow:0 10px 30px rgba(40,120,200,.12); --r:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Prompt',system-ui,sans-serif;color:var(--navy);background:linear-gradient(180deg,#BFE6FF 0%,#E4F4FF 340px,#F6FBFF 700px,#fff 100%);min-height:100vh;overflow-x:hidden}
+h1,h2,h3,.cute{font-family:'Mali','Prompt',sans-serif}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+
+/* ---------- sky / clouds ---------- */
+.sky{position:absolute;inset:0 0 auto 0;height:420px;overflow:hidden;pointer-events:none;z-index:0}
+.cloud{position:absolute;filter:drop-shadow(0 8px 14px rgba(60,140,210,.18))}
+.c1{top:30px;left:-40px;width:190px;animation:drift 38s linear infinite}
+.c2{top:120px;right:6%;width:150px;animation:bob 6s ease-in-out infinite}
+.c3{top:250px;left:12%;width:95px;opacity:.85;animation:bob 7s ease-in-out infinite reverse}
+.c4{top:40px;right:30%;width:80px;opacity:.75;animation:drift 55s linear infinite;animation-delay:-20s}
+.c5{top:300px;right:-20px;width:120px;opacity:.8;animation:bob 8s ease-in-out infinite}
+@keyframes drift{from{transform:translateX(-10vw)}to{transform:translateX(110vw)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.sparkle{position:absolute;color:#fff;font-size:18px;animation:tw 3s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:28px 18px 80px}
+
+/* ---------- header ---------- */
+header.hero{text-align:center;padding:26px 10px 18px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.85);padding:6px 14px;border-radius:999px;font-size:13px;color:var(--blue-d);font-weight:500;box-shadow:0 4px 14px rgba(40,120,200,.12)}
+.badge .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(34,195,166,.2)}
+.badge.local .dot{background:var(--late);box-shadow:0 0 0 4px rgba(245,165,36,.2)}
+.badge.loading .dot{background:var(--muted);box-shadow:none}
+h1{font-size:clamp(30px,5.4vw,50px);margin:14px 0 4px;color:#1468B8;letter-spacing:.5px;text-shadow:0 3px 0 #fff}
+h1 .ai{background:linear-gradient(90deg,#1C7FD6,#39B7F7 60%,#7FD3FF);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.sub{color:var(--muted);margin:0;font-size:15px}
+.clock{margin:18px auto 0;display:inline-flex;gap:14px;align-items:center;background:#fff;border-radius:20px;padding:10px 20px;box-shadow:var(--shadow)}
+.clock .t{font-family:'Mali';font-size:28px;font-weight:700;color:var(--blue-d);font-variant-numeric:tabular-nums}
+.clock .d{font-size:14px;color:var(--muted);text-align:left;line-height:1.35}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0 14px}
+.stat{background:#fff;border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat .n{font-family:'Mali';font-size:32px;font-weight:700;line-height:1.1}
+.stat .l{font-size:13px;color:var(--muted)}
+.stat .ic{position:absolute;right:12px;top:12px;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:18px}
+.s-all .n{color:var(--blue-d)} .s-all .ic{background:var(--sky)}
+.s-ok .n{color:var(--ok)} .s-ok .ic{background:var(--ok-bg)}
+.s-late .n{color:var(--late)} .s-late .ic{background:var(--late-bg)}
+.s-wait .n{color:#8AA1BD} .s-wait .ic{background:#F0F4F9}
+.progress{background:#fff;border-radius:999px;height:14px;box-shadow:inset 0 1px 3px rgba(0,0,0,.06);overflow:hidden;border:2px solid #fff}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,#7FD3FF,#3AA7F5,#22C3A6);border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.ptext{font-size:13px;color:var(--muted);margin:6px 4px 0;display:flex;justify-content:space-between}
+
+/* ---------- toolbar ---------- */
+.panel{background:rgba(255,255,255,.92);border-radius:26px;box-shadow:var(--shadow);padding:18px;margin-top:22px;backdrop-filter:blur(6px)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.search{flex:1 1 240px;display:flex;align-items:center;gap:8px;background:var(--sky);border-radius:16px;padding:0 14px;border:2px solid transparent;transition:.2s}
+.search:focus-within{border-color:var(--blue);background:#fff}
+.search input{border:0;background:transparent;outline:0;padding:12px 0;font-size:15px;width:100%;color:var(--navy)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:0;background:var(--sky);color:var(--blue-d);padding:9px 14px;border-radius:999px;font-size:14px;font-weight:500;transition:.15s}
+.chip.on{background:var(--blue);color:#fff;box-shadow:0 6px 14px rgba(58,167,245,.35)}
+.datebox{display:flex;align-items:center;gap:6px;background:var(--sky);border-radius:14px;padding:4px 10px;font-size:14px;color:var(--muted)}
+.datebox input{border:0;background:transparent;color:var(--navy);font-size:14px;padding:6px 0;outline:0}
+
+/* ---------- list ---------- */
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px}
+.card{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid var(--line);border-radius:20px;padding:12px 14px;transition:transform .15s,box-shadow .15s,border-color .15s;position:relative;animation:pop .35s ease both}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(40,120,200,.12)}
+.card.done{border-color:#BFEFE5;background:linear-gradient(135deg,#fff 60%,#ECFBF7)}
+.card.isLate{border-color:#FBE2B4;background:linear-gradient(135deg,#fff 60%,#FFF8EA)}
+.av{flex:0 0 46px;height:46px;border-radius:16px;display:grid;place-items:center;font-family:'Mali';font-weight:700;font-size:19px;color:#fff}
+.info{flex:1;min-width:0}
+.nm{font-weight:600;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:12.5px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.tag.ok{background:var(--ok-bg);color:#0E9C83}
+.tag.late{background:var(--late-bg);color:#B97400}
+.sig{height:38px;max-width:86px;object-fit:contain;border-radius:10px;background:#F7FBFF;border:1px dashed var(--line);padding:2px;cursor:zoom-in}
+.btn{border:0;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:linear-gradient(135deg,#4DB6FA,#1C7FD6);color:#fff;box-shadow:0 6px 16px rgba(28,127,214,.3)}
+.btn-p:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn-s{background:var(--sky);color:var(--blue-d)}
+.btn-s:hover{background:var(--sky2)}
+.btn-g{background:linear-gradient(135deg,#3FD8BC,#16AE93);color:#fff;box-shadow:0 6px 16px rgba(22,174,147,.3)}
+.btn-d{background:#FFECEF;color:#D94464}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.x{border:0;background:transparent;color:#B7C6D8;font-size:16px;padding:4px 6px;border-radius:8px}
+.x:hover{background:#FFECEF;color:#D94464}
+
+.empty{text-align:center;padding:40px 10px 30px;color:var(--muted)}
+.empty svg{width:150px;animation:bob 5s ease-in-out infinite}
+.empty h3{color:var(--navy);margin:10px 0 4px}
+
+/* ---------- admin ---------- */
+details.admin{margin-top:22px}
+details.admin>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:'Mali';font-weight:600;font-size:18px;color:var(--blue-d)}
+details.admin>summary::-webkit-details-marker{display:none}
+details.admin>summary .chev{margin-left:auto;transition:.2s;color:var(--muted)}
+details.admin[open]>summary .chev{transform:rotate(180deg)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.box{background:#F7FBFF;border:2px solid var(--line);border-radius:20px;padding:16px}
+.box h3{margin:0 0 4px;font-size:16px}
+.box p.h{margin:0 0 12px;font-size:13px;color:var(--muted)}
+.drop{border:2.5px dashed #9FD3F8;border-radius:18px;padding:22px;text-align:center;background:#fff;transition:.2s;cursor:pointer}
+.drop.over{background:var(--sky);border-color:var(--blue)}
+.drop .big{font-size:30px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);flex:1 1 120px}
+.fld input{border:2px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px;color:var(--navy);outline:0;background:#fff}
+.fld input:focus{border-color:var(--blue)}
+.preview{margin-top:12px;max-height:220px;overflow:auto;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:13px}
+.preview table{width:100%;border-collapse:collapse}
+.preview th,.preview td{padding:6px 10px;border-bottom:1px solid #EEF5FC;text-align:left}
+.preview th{background:var(--sky);position:sticky;top:0;color:var(--blue-d)}
+.note{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+/* ---------- modal ---------- */
+.ov{position:fixed;inset:0;background:rgba(20,60,110,.35);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.ov.show{display:flex;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal{background:#fff;border-radius:28px;width:min(560px,100%);padding:22px;box-shadow:0 30px 60px rgba(20,60,110,.3);position:relative;animation:up .25s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes up{from{transform:translateY(20px) scale(.97);opacity:0}}
+.modal .mc{position:absolute;top:-38px;left:50%;transform:translateX(-50%);width:110px}
+.modal h2{margin:22px 0 2px;text-align:center;font-size:24px}
+.modal .who{text-align:center;color:var(--muted);font-size:14px}
+.timechip{display:flex;justify-content:center;gap:10px;margin:14px 0}
+.timechip span{background:var(--sky);color:var(--blue-d);border-radius:14px;padding:8px 14px;font-weight:600;font-size:15px}
+.padwrap{position:relative;border-radius:20px;background:repeating-linear-gradient(#fff 0 39px,#EEF6FD 39px 40px);border:2.5px dashed #9FD3F8;overflow:hidden}
+canvas#pad{display:block;width:100%;height:210px;touch-action:none;cursor:crosshair}
+.padhint{position:absolute;inset:0;display:grid;place-items:center;color:#A9C6E2;font-family:'Mali';font-size:18px;pointer-events:none}
+.mact{display:flex;gap:10px;justify-content:space-between;margin-top:16px;flex-wrap:wrap}
+.bigsig{width:100%;border-radius:16px;background:#F7FBFF;border:1px solid var(--line);margin-top:12px}
+
+/* ---------- toast / misc ---------- */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(30px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:16px;font-size:14px;opacity:0;transition:.3s;z-index:80;max-width:90vw;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.banner{margin-top:14px;background:#FFF8E8;border:1.5px solid #FBE2B4;color:#8A5A00;border-radius:16px;padding:10px 14px;font-size:13.5px;display:none}
+.banner.show{display:block}
+.confetti{position:fixed;top:-20px;z-index:90;pointer-events:none;font-size:20px;animation:fall 1.6s ease-in forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(360deg);opacity:.2}}
+footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
+
+@media (max-width:760px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .list{grid-template-columns:1fr}
+  .clock .t{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- reusable cute cloud -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="cloud" viewBox="0 0 200 120">
+      <path d="M48 108c-22 0-38-15-38-34 0-18 14-32 32-34 4-21 22-36 44-36 18 0 33 10 40 25 5-2 10-3 16-3 22 0 40 17 40 38 0 3 0 6-1 8 9 5 14 13 14 22 0 8-7 14-16 14z" fill="#fff"/>
+      <ellipse cx="78" cy="72" rx="5" ry="6.5" fill="#2A4A72"/>
+      <ellipse cx="122" cy="72" rx="5" ry="6.5" fill="#2A4A72"/>
+      <circle cx="80" cy="69.5" r="1.8" fill="#fff"/><circle cx="124" cy="69.5" r="1.8" fill="#fff"/>
+      <ellipse cx="64" cy="86" rx="9" ry="5.5" fill="#FFB3D1" opacity=".8"/>
+      <ellipse cx="136" cy="86" rx="9" ry="5.5" fill="#FFB3D1" opacity=".8"/>
+      <path d="M92 84q8 8 16 0" stroke="#2A4A72" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="cloud-plain" viewBox="0 0 200 120">
+      <path d="M48 108c-22 0-38-15-38-34 0-18 14-32 32-34 4-21 22-36 44-36 18 0 33 10 40 25 5-2 10-3 16-3 22 0 40 17 40 38 0 3 0 6-1 8 9 5 14 13 14 22 0 8-7 14-16 14z" fill="#fff"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="sky" aria-hidden="true">
+  <svg class="cloud c1"><use href="#cloud"/></svg>
+  <svg class="cloud c2"><use href="#cloud"/></svg>
+  <svg class="cloud c3"><use href="#cloud-plain"/></svg>
+  <svg class="cloud c4"><use href="#cloud-plain"/></svg>
+  <svg class="cloud c5"><use href="#cloud"/></svg>
+  <span class="sparkle" style="top:70px;left:30%">✦</span>
+  <span class="sparkle" style="top:190px;right:22%;animation-delay:1s">✦</span>
+  <span class="sparkle" style="top:330px;left:6%;animation-delay:2s">✧</span>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="badge loading" id="modeBadge"><span class="dot"></span><span id="modeText">กำลังเชื่อมต่อ…</span></span>
+    <h1>เช็คชื่อคลาส <span class="ai" id="className">Claude AI</span></h1>
+    <p class="sub">แตะชื่อของคุณ → เซ็นลายเซ็น → กดยืนยัน ระบบจะบันทึกเวลาที่มาให้อัตโนมัติ</p>
+    <div class="clock">
+      <div class="t" id="clockT">--:--:--</div>
+      <div class="d"><div id="clockD">—</div><div>เริ่มคลาส <b id="startLbl">09:00</b> น.</div></div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <section class="stats">
+    <div class="stat s-all"><div class="ic">👥</div><div class="n" id="stAll">0</div><div class="l">ผู้เรียนทั้งหมด</div></div>
+    <div class="stat s-ok"><div class="ic">☀️</div><div class="n" id="stOk">0</div><div class="l">มาตรงเวลา</div></div>
+    <div class="stat s-late"><div class="ic">⏰</div><div class="n" id="stLate">0</div><div class="l">มาสาย</div></div>
+    <div class="stat s-wait"><div class="ic">☁️</div><div class="n" id="stWait">0</div><div class="l">ยังไม่เช็คชื่อ</div></div>
+  </section>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="ptext"><span id="pLeft">เข้าเรียนแล้ว 0%</span><span id="pRight"></span></div>
+
+  <section class="panel">
+    <div class="toolbar">
+      <label class="search">🔍<input id="q" placeholder="ค้นหาชื่อ / รหัส / ชื่อเล่น" autocomplete="off"></label>
+      <div class="chips" id="chips">
+        <button class="chip on" data-f="all">ทั้งหมด</button>
+        <button class="chip" data-f="wait">ยังไม่เช็ค</button>
+        <button class="chip" data-f="done">มาแล้ว</button>
+        <button class="chip" data-f="late">มาสาย</button>
+      </div>
+      <label class="datebox adminOnly" style="display:none">📅<input type="date" id="dateIn"></label>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="empty" id="empty" style="display:none">
+      <svg viewBox="0 0 200 120"><use href="#cloud"/></svg>
+      <h3 id="emptyH">ยังไม่มีรายชื่อผู้เรียน</h3>
+      <div id="emptyP">ผู้สอนสามารถนำเข้ารายชื่อจากไฟล์ CSV หรือ Excel ได้ที่ส่วน “สำหรับผู้สอน” ด้านล่าง</div>
+    </div>
+  </section>
+
+  <!-- ADMIN -->
+  <details class="panel admin adminOnly" id="adminBox" style="display:none">
+    <summary>🛠️ สำหรับผู้สอน <span class="chev">▾</span></summary>
+    <div class="grid2">
+      <div class="box">
+        <h3>📥 นำเข้ารายชื่อ</h3>
+        <p class="h">รองรับ .csv .xlsx .xls — ระบบจะหาคอลัมน์ “ชื่อ / Name”, “รหัส / ID”, “ชื่อเล่น” ให้อัตโนมัติ</p>
+        <div class="drop" id="drop">
+          <div class="big">☁️📄</div>
+          <div><b>ลากไฟล์มาวาง</b> หรือคลิกเพื่อเลือกไฟล์</div>
+          <input type="file" id="file" accept=".csv,.xlsx,.xls,.tsv,.txt" hidden>
+        </div>
+        <div id="importPreview"></div>
+        <div class="row" style="margin-top:14px">
+          <label class="fld">เพิ่มทีละคน — ชื่อ-นามสกุล<input id="addName" placeholder="เช่น สมใจ ใจดี"></label>
+          <label class="fld" style="flex:0 1 110px">รหัส<input id="addCode" placeholder="(ถ้ามี)"></label>
+          <button class="btn btn-s" id="addBtn" style="align-self:flex-end">＋ เพิ่ม</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>⚙️ ตั้งค่าคลาส</h3>
+        <p class="h">ใช้คำนวณว่าใครมาตรงเวลา / มาสาย</p>
+        <div class="row">
+          <label class="fld">ชื่อคลาส<input id="cfgName"></label>
+        </div>
+        <div class="row">
+          <label class="fld">เวลาเริ่มคลาส<input type="time" id="cfgStart"></label>
+          <label class="fld">สายได้ไม่เกิน (นาที)<input type="number" min="0" max="180" id="cfgLate"></label>
+        </div>
+        <div class="row"><button class="btn btn-p" id="saveCfg">💾 บันทึกการตั้งค่า</button></div>
+
+        <h3 style="margin-top:20px">📤 ส่งออก / Google Sheets</h3>
+        <p class="h">ข้อมูลของวันที่ที่เลือกอยู่ด้านบน</p>
+        <div class="row">
+          <button class="btn btn-g" id="dlCsv">⬇️ ดาวน์โหลด CSV</button>
+          <button class="btn btn-s" id="copyTsv">📋 คัดลอกไปวางใน Google Sheets</button>
+        </div>
+        <div class="note">กด “คัดลอก” แล้วไปที่ Google Sheets คลิกช่อง A1 แล้วกด Ctrl/⌘+V ได้ทันที</div>
+        <div class="row" style="margin-top:18px">
+          <button class="btn btn-d" id="clearDay">ล้างการเช็คชื่อของวันนี้</button>
+          <button class="btn btn-d" id="clearRoster">ลบรายชื่อทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <footer>☁️ Claude AI Class · ระบบเช็คชื่อออนไลน์</footer>
+</div>
+
+<!-- check-in modal -->
+<div class="ov" id="ov">
+  <div class="modal">
+    <svg class="mc" viewBox="0 0 200 120"><use href="#cloud"/></svg>
+    <h2 id="mName">—</h2>
+    <div class="who" id="mWho"></div>
+    <div class="timechip"><span>🕘 <span id="mTime">--:--</span> น.</span><span id="mDate">—</span></div>
+    <div class="padwrap">
+      <canvas id="pad"></canvas>
+      <div class="padhint" id="padHint">✍️ เซ็นชื่อตรงนี้</div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-s" id="mClear">ล้างลายเซ็น</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-s" id="mCancel">ยกเลิก</button>
+        <button class="btn btn-p" id="mOk" disabled>✓ ยืนยันเข้าเรียน</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- signature viewer -->
+<div class="ov" id="ov2">
+  <div class="modal">
+    <svg class="mc" viewBox="0 0 200 120"><use href="#cloud"/></svg>
+    <h2 id="vName">—</h2>
+    <div class="who" id="vWho"></div>
+    <img class="bigsig" id="vImg" alt="ลายเซ็น">
+    <div class="mact">
+      <button class="btn btn-d adminOnly" id="vUndo" style="display:none">ยกเลิกการเช็คชื่อ</button>
+      <button class="btn btn-p" id="vClose" style="margin-left:auto">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const DEF = { className:'Claude AI', startTime:'09:00', lateMin:15 };
+
+/* ============ ตั้งค่าสำหรับเอาขึ้นเซิร์ฟเวอร์เอง ============
+   GOOGLE_SCRIPT_URL : วาง URL ของ Google Apps Script (Web app) ที่ได้จากไฟล์ google-apps-script.gs
+                       เว้นว่างไว้ = ไม่ส่งข้อมูลไป Google Sheets
+   ADMIN_PIN         : รหัสเข้าโหมดผู้สอน — เปิดเว็บแล้วต่อท้าย URL ด้วย #admin
+   SEED_ROSTER       : รายชื่อเริ่มต้น (ใช้ตอนเปิดเว็บครั้งแรกในแต่ละเครื่อง) */
+const GOOGLE_SCRIPT_URL = '';
+const ADMIN_PIN = '1234';
+const SEED_ROSTER = [
+  'นายภณธกร วงศ์เจริญ','นางสาววิภาดา พลาธนพร','นางสาววราภรณ์ หวานล้ำ','นายนรพนธ์ จิรัฐิติกาลพงศ์',
+  'นางสาวจิดาภา ทองเกิด','นางสาวธนวรรณ ตั้งตรงพานิช','นายคณาธิป จำนงค์','นางสาวรัตติยากร ฉายหิรัญ',
+  'นายวิชยุตม์ กีรติธนาภรณ์','นางสาวจิตรา คำแหง','นายสิริวรรณ รอดศิริ','นายวิศรุต สุดสัดย์',
+  'นายกิตติธัช ธูปถมพงศ์','นางสาวณัฏชา แสวงหอม','นายคงติภูมิ มณีโชค','นางสาวสุชาดา เอี่ยมสำอางค์',
+  'นางสาวพิชญา พิสุทธิ์พิเชฏฐ์','นางสาววันทนา จุตาลานนท์','นางสาวระวีวรรณ การภักดี','นางสาวพรพิมล ผลเพิ่ม',
+  'นางสาวพรพิมล ผมเพิ่ม','นางสาวอรณิชา ครองศักดิ์ศิริ','นางสาวนัทธมน พุทธพรม'
+];
+
+function sendToSheet(row){
+  if (!GOOGLE_SCRIPT_URL) return;
+  fetch(GOOGLE_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(row) })
+    .catch(e=>{ console.warn('ส่งไป Google Sheets ไม่สำเร็จ', e); toast('บันทึกในเครื่องแล้ว แต่ส่งไป Google Sheets ไม่สำเร็จ'); });
+}
+const COLORS = ['#5AB8F7','#4FD1C5','#8C9EFF','#FF9EC7','#FFB86B','#6FCF97','#7FB3FF','#B39DFF'];
+const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+const THAI_MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+const pad2 = n => String(n).padStart(2,'0');
+const dateKey = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const hhmm = d => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+const thaiDate = key => { const [y,m,d]=key.split('-').map(Number); const dt=new Date(y,m-1,d); return `วัน${THAI_DAYS[dt.getDay()]}ที่ ${d} ${THAI_MON[m-1]} ${y+543}`; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').trim().replace(/\s+/g,' ').toLowerCase();
+const newId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const safeSig = u => typeof u === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u) ? u : '';
+const colorFor = s => { let h=0; for (const c of String(s)) h=(h*31+c.charCodeAt(0))|0; return COLORS[Math.abs(h)%COLORS.length]; };
+const initial = n => { const t=String(n||'?').trim().replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|mr\.?|ms\.?|mrs\.?)\s*/i,''); return (t[0]||'?').toUpperCase(); };
+
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2800); }
+function banner(msg){ const b=$('#banner'); if(msg){ b.textContent=msg; b.classList.add('show'); } else b.classList.remove('show'); }
+
+/* ================= state ================= */
+const S = { mode:'loading', db:null, isAdmin:false, roster:[], config:{...DEF}, checkins:{}, date:dateKey(new Date()), filter:'all', q:'', readOnly:false };
+let unsubCheck = null;
+
+/* ---------- local fallback store ---------- */
+const LS_KEY = 'claude-ai-class-attendance-v1';
+let L = { roster:{}, config:{}, days:{} };
+function lsLoad(){ try{ const j=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(j) L=Object.assign(L,j); }catch(e){} }
+function lsSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(L)); }catch(e){} }
+function localPush(){
+  S.roster = Object.entries(L.roster).map(([id,v])=>({id,...v}));
+  S.config = {...DEF, ...L.config};
+  S.checkins = {...(L.days[S.date]||{})};
+  render();
+}
+
+/* ---------- data ops (remote or local) ---------- */
+function handleWriteErr(e){
+  console.error(e);
+  if (e && e.code==='invalid_argument'){ S.readOnly=true; toast('บัญชีนี้ยังไม่มีสิทธิ์บันทึก — ให้ผู้สอนแชร์สิทธิ์ระดับ Contributor ขึ้นไป'); render(); }
+  else if (e && e.code==='quota_exceeded') toast('พื้นที่เก็บข้อมูลเต็ม กรุณาลบข้อมูลเก่าบางส่วน');
+  else toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+}
+async function retry(fn){ try{ return await fn(); }catch(e){ if(e&&e.code==='unavailable'){ await new Promise(r=>setTimeout(r,400+Math.random()*600)); return fn(); } throw e; } }
+
+const ops = {
+  async putCheckin(sid, data){
+    if (S.mode==='remote') return retry(()=>S.db.doc(`days/${S.date}/checkins/${sid}`).set(data));
+    (L.days[S.date] ||= {})[sid]=data; lsSave(); localPush();
+  },
+  async delCheckin(sid, date=S.date){
+    if (S.mode==='remote') return retry(()=>S.db.doc(`days/${date}/checkins/${sid}`).delete());
+    if (L.days[date]) delete L.days[date][sid]; lsSave(); localPush();
+  },
+  async putStudent(st){
+    const {id,...body}=st;
+    if (S.mode==='remote') return retry(()=>S.db.doc(`roster/${id}`).set(body));
+    L.roster[id]=body; lsSave(); localPush();
+  },
+  async delStudent(id){
+    if (S.mode==='remote') return retry(()=>S.db.doc(`roster/${id}`).delete());
+    delete L.roster[id]; lsSave(); localPush();
+  },
+  async putConfig(cfg){
+    if (S.mode==='remote') return retry(()=>S.db.doc('config/main').set(cfg));
+    L.config=cfg; lsSave(); localPush();
+  }
+};
+
+function subscribeCheckins(){
+  if (unsubCheck){ unsubCheck(); unsubCheck=null; }
+  if (S.mode!=='remote'){ localPush(); return; }
+  S.checkins={}; render();
+  unsubCheck = S.db.collection(`days/${S.date}/checkins`).onSnapshot(snap=>{
+    const m={}; snap.docs.forEach(d=>{ m[d.id]=d.data(); }); S.checkins=m; render();
+  }, err=>{ console.error(err); banner('โหลดข้อมูลการเช็คชื่อไม่สำเร็จ กรุณารีเฟรชหน้า'); });
+}
+
+/* ================= boot ================= */
+async function boot(){
+  tickClock(); setInterval(tickClock,1000);
+  $('#dateIn').value = S.date;
+  render();
+
+  let db=null, user=null;
+  try{
+    [db,user] = await Promise.all([
+      window.claude?.use ? window.claude.use('db') : null,
+      window.claude?.use ? window.claude.use('user') : null
+    ]);
+  }catch(e){ db=null; }
+
+  if (db){
+    S.mode='remote'; S.db=db;
+    try{ S.isAdmin = user ? await user.canEdit() : false; }catch(e){ S.isAdmin=false; }
+    try{ const w = user ? await user.can('data.write') : null; if (w===false) S.readOnly=true; }catch(e){}
+    setMode();
+    let gotFresh=false;
+    const timer=setTimeout(()=>{ if(!gotFresh) banner('ยังเชื่อมต่อฐานข้อมูลไม่ได้ ข้อมูลที่เห็นอาจยังไม่อัปเดต'); },10000);
+    db.collection('roster').onSnapshot(snap=>{
+      if(!snap.metadata.fromCache && !gotFresh){ gotFresh=true; clearTimeout(timer); banner(''); }
+      S.roster = snap.docs.map(d=>({id:d.id, ...d.data()})); render();
+    }, err=>{ clearTimeout(timer); console.error(err); banner('โหลดรายชื่อไม่สำเร็จ กรุณารีเฟรชหน้า'); });
+    db.doc('config/main').onSnapshot(snap=>{
+      S.config = {...DEF, ...(snap.exists ? snap.data() : {})}; fillCfg(); render();
+    }, err=>console.error(err));
+    subscribeCheckins();
+  } else {
+    S.mode='local'; lsLoad();
+    if (!L.seeded){ L.seeded=true; SEED_ROSTER.forEach((name,i)=>{ L.roster['seed'+(i+1)]={name,code:'',nick:'',order:i+1}; }); lsSave(); }
+    const checkAdmin = async ()=>{
+      if (location.hash!=='#admin'){ S.isAdmin=false; }
+      else if (sessionStorage.getItem('adm')==='1'){ S.isAdmin=true; }
+      else { const pin=await pinBox(); S.isAdmin = pin===ADMIN_PIN; if(S.isAdmin){ try{sessionStorage.setItem('adm','1');}catch(e){} } else if(pin!==null) toast('รหัสไม่ถูกต้อง'); }
+      setMode(); render();
+    };
+    window.addEventListener('hashchange', checkAdmin);
+    setMode(); fillCfg(); localPush(); checkAdmin();
+  }
+}
+function setMode(){
+  const b=$('#modeBadge'); b.classList.remove('loading','local');
+  if (S.mode==='remote'){ $('#modeText').textContent = S.isAdmin ? 'ออนไลน์ · โหมดผู้สอน' : 'ออนไลน์ · บันทึกแบบเรียลไทม์'; }
+  else { b.classList.add('local'); $('#modeText').textContent='โหมดเครื่องเดียว (เก็บในเบราว์เซอร์นี้)'; }
+  document.querySelectorAll('.adminOnly').forEach(el=>el.style.display = S.isAdmin ? '' : 'none');
+}
+function fillCfg(){
+  const c=S.config;
+  if (document.activeElement?.closest?.('#adminBox')) return;
+  $('#cfgName').value=c.className; $('#cfgStart').value=c.startTime; $('#cfgLate').value=c.lateMin;
+}
+function tickClock(){
+  const n=new Date(); $('#clockT').textContent=`${hhmm(n)}:${pad2(n.getSeconds())}`;
+  $('#clockD').textContent=thaiDate(dateKey(n));
+  if ($('#ov').classList.contains('show')) $('#mTime').textContent=hhmm(n);
+}
+
+/* ================= logic ================= */
+function lateInfo(ci){
+  if (!ci || !ci.time) return null;
+  const t=new Date(ci.time); const [h,m]=(S.config.startTime||'09:00').split(':').map(Number);
+  const start=new Date(t); start.setHours(h,m,0,0);
+  const diff=Math.round((t-start)/60000);
+  const late = diff > Number(S.config.lateMin||0);
+  return { late, diff, time:hhmm(t) };
+}
+function sortedRoster(){
+  return [...S.roster].sort((a,b)=>(a.order??1e9)-(b.order??1e9) || String(a.name).localeCompare(String(b.name),'th'));
+}
+
+/* ================= render ================= */
+function render(){
+  $('#className').textContent = S.config.className || 'Claude AI';
+  $('#startLbl').textContent = S.config.startTime || '09:00';
+  const roster = sortedRoster();
+  let ok=0, late=0;
+  roster.forEach(s=>{ const li=lateInfo(S.checkins[s.id]); if(li){ li.late?late++:ok++; } });
+  const all=roster.length, done=ok+late, wait=all-done;
+  $('#stAll').textContent=all; $('#stOk').textContent=ok; $('#stLate').textContent=late; $('#stWait').textContent=wait;
+  const pct = all ? Math.round(done/all*100) : 0;
+  $('#bar').style.width=pct+'%';
+  $('#pLeft').textContent=`เข้าเรียนแล้ว ${pct}% (${done}/${all})`;
+  $('#pRight').textContent = S.date===dateKey(new Date()) ? 'วันนี้' : thaiDate(S.date);
+
+  const q=norm(S.q);
+  const items = roster.filter(s=>{
+    const li=lateInfo(S.checkins[s.id]);
+    if (S.filter==='wait' && li) return false;
+    if (S.filter==='done' && !li) return false;
+    if (S.filter==='late' && !(li&&li.late)) return false;
+    if (q && ![s.name,s.code,s.nick].some(v=>norm(v).includes(q))) return false;
+    return true;
+  });
+
+  const list=$('#list'), empty=$('#empty');
+  if (!items.length){
+    list.innerHTML=''; empty.style.display='';
+    if (!all){ $('#emptyH').textContent= S.mode==='loading' ? 'กำลังโหลดรายชื่อ…' : 'ยังไม่มีรายชื่อผู้เรียน';
+      $('#emptyP').textContent= S.isAdmin ? 'นำเข้ารายชื่อจากไฟล์ CSV หรือ Excel ได้ที่ส่วน “สำหรับผู้สอน” ด้านล่าง' : 'รอผู้สอนเพิ่มรายชื่อสักครู่นะ ☁️'; }
+    else { $('#emptyH').textContent='ไม่พบรายชื่อที่ค้นหา'; $('#emptyP').textContent='ลองพิมพ์ชื่อ รหัส หรือชื่อเล่นใหม่อีกครั้ง'; }
+    return;
+  }
+  empty.style.display='none';
+  const isToday = S.date===dateKey(new Date());
+  list.innerHTML = items.map((s,i)=>{
+    const ci=S.checkins[s.id], li=lateInfo(ci), sig=ci?safeSig(ci.sig):'';
+    const sub=[s.code?`รหัส ${esc(s.code)}`:'', s.nick?`(${esc(s.nick)})`:''].filter(Boolean).join(' ');
+    let right;
+    if (li){
+      right = `${sig?`<img class="sig" src="${sig}" data-view="${esc(s.id)}" alt="ลายเซ็น">`:''}`;
+    } else if (isToday && !S.readOnly && S.mode!=='loading'){
+      right = `<button class="btn btn-p" data-in="${esc(s.id)}">เช็คชื่อ</button>`;
+    } else right = `<span class="tag" style="background:#F0F4F9;color:#8AA1BD">ยังไม่มา</span>`;
+    const status = li ? `<span class="tag ${li.late?'late':'ok'}">${li.late?'⏰ สาย':'✓ มาแล้ว'} · ${li.time} น.</span>` : '';
+    const del = S.isAdmin ? `<button class="x" title="ลบรายชื่อ" data-del="${esc(s.id)}">✕</button>` : '';
+    return `<div class="card ${li?(li.late?'isLate':'done'):''}" style="animation-delay:${Math.min(i,20)*15}ms">
+      <div class="av" style="background:${colorFor(s.name)}">${li?'✓':esc(initial(s.name))}</div>
+      <div class="info"><div class="nm">${esc(s.name)}</div><div class="meta">${sub?`<span>${sub}</span>`:''}${status}</div></div>
+      ${right}${del}
+    </div>`;
+  }).join('');
+}
+
+/* ================= events: list ================= */
+$('#q').addEventListener('input', e=>{ S.q=e.target.value; render(); });
+$('#chips').addEventListener('click', e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  S.filter=b.dataset.f; document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b)); render();
+});
+$('#dateIn').addEventListener('change', e=>{ if(!e.target.value) return; S.date=e.target.value; subscribeCheckins(); });
+$('#list').addEventListener('click', async e=>{
+  const inB=e.target.closest('[data-in]'), v=e.target.closest('[data-view]'), d=e.target.closest('[data-del]');
+  if (inB) openCheckin(inB.dataset.in);
+  else if (v) openViewer(v.dataset.view);
+  else if (d){
+    const s=S.roster.find(x=>x.id===d.dataset.del); if(!s) return;
+    if (!(await confirmBox(`ลบ “${s.name}” ออกจากรายชื่อ?`))) return;
+    try{ await ops.delStudent(s.id); toast('ลบรายชื่อแล้ว'); }catch(err){ handleWriteErr(err); }
+  }
+});
+
+/* ================= signature pad ================= */
+const pad=$('#pad'), ctx=pad.getContext('2d');
+let drawing=false, hasInk=false, last=null, current=null;
+function sizePad(){
+  const r=pad.getBoundingClientRect(), dpr=Math.max(1,window.devicePixelRatio||1);
+  pad.width=Math.round(r.width*dpr); pad.height=Math.round(r.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#17365D';
+  hasInk=false; $('#padHint').style.display=''; $('#mOk').disabled=true;
+}
+const pt = e => { const r=pad.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top, p:e.pressure||.5}; };
+pad.addEventListener('pointerdown', e=>{ e.preventDefault(); pad.setPointerCapture(e.pointerId); drawing=true; last=pt(e);
+  ctx.beginPath(); ctx.arc(last.x,last.y,1.4,0,Math.PI*2); ctx.fillStyle='#17365D'; ctx.fill(); mark(); });
+pad.addEventListener('pointermove', e=>{ if(!drawing) return; e.preventDefault(); const p=pt(e);
+  const dist=Math.hypot(p.x-last.x,p.y-last.y); ctx.lineWidth=Math.max(1.6, Math.min(3.6, 3.8 - dist*0.08));
+  ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; mark(); });
+['pointerup','pointercancel','pointerleave'].forEach(t=>pad.addEventListener(t,()=>{ drawing=false; }));
+function mark(){ if(!hasInk){ hasInk=true; $('#padHint').style.display='none'; $('#mOk').disabled=false; } }
+$('#mClear').addEventListener('click', ()=>{ ctx.clearRect(0,0,pad.width,pad.height); sizePad(); });
+
+function exportSig(){
+  // trim to ink bounds, scale to max 480px wide, transparent PNG
+  const w=pad.width, h=pad.height, data=ctx.getImageData(0,0,w,h).data;
+  let x0=w,y0=h,x1=0,y1=0;
+  for(let y=0;y<h;y+=2) for(let x=0;x<w;x+=2){ if(data[(y*w+x)*4+3]>10){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+  if (x1<=x0||y1<=y0){ x0=0;y0=0;x1=w;y1=h; }
+  const m=12; x0=Math.max(0,x0-m); y0=Math.max(0,y0-m); x1=Math.min(w,x1+m); y1=Math.min(h,y1+m);
+  const cw=x1-x0, ch=y1-y0, sc=Math.min(1, 480/cw, 200/ch);
+  const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(cw*sc)); c.height=Math.max(1,Math.round(ch*sc));
+  c.getContext('2d').drawImage(pad,x0,y0,cw,ch,0,0,c.width,c.height);
+  return c.toDataURL('image/png');
+}
+
+function openCheckin(id){
+  const s=S.roster.find(x=>x.id===id); if(!s) return;
+  if (S.checkins[id]){ toast('คนนี้เช็คชื่อไปแล้ว'); return; }
+  current=s;
+  $('#mName').textContent=s.name;
+  $('#mWho').textContent=[s.code?`รหัส ${s.code}`:'', s.nick?`ชื่อเล่น ${s.nick}`:''].filter(Boolean).join(' · ') || 'กรุณาเซ็นชื่อเพื่อยืนยันการเข้าเรียน';
+  $('#mDate').textContent=thaiDate(S.date); $('#mTime').textContent=hhmm(new Date());
+  $('#ov').classList.add('show'); requestAnimationFrame(sizePad);
+}
+function closeCheckin(){ $('#ov').classList.remove('show'); current=null; }
+$('#mCancel').addEventListener('click', closeCheckin);
+$('#ov').addEventListener('click', e=>{ if(e.target.id==='ov') closeCheckin(); });
+$('#mOk').addEventListener('click', async ()=>{
+  if(!current||!hasInk) return;
+  const s=current, btn=$('#mOk'); btn.disabled=true; btn.textContent='กำลังบันทึก…';
+  const now=new Date();
+  const data={ time:now.toISOString(), sig:exportSig(), name:s.name, code:s.code||'' };
+  try{
+    await ops.putCheckin(s.id, data);
+    const li0=lateInfo(data);
+    sendToSheet({ date:S.date, time:hhmm(now), timestamp:data.time, name:s.name, code:s.code||'', nick:s.nick||'',
+      status: li0&&li0.late?'มาสาย':'มาตรงเวลา', lateMinutes: li0&&li0.late?li0.diff:0, className:S.config.className, signature:data.sig });
+    closeCheckin(); celebrate();
+    const li=lateInfo(data); toast(`เช็คชื่อสำเร็จ! ${s.name} มาเวลา ${hhmm(now)} น.${li&&li.late?' (สาย)':''}`);
+  }catch(err){ handleWriteErr(err); }
+  finally{ btn.textContent='✓ ยืนยันเข้าเรียน'; btn.disabled=!hasInk; }
+});
+window.addEventListener('resize', ()=>{ if($('#ov').classList.contains('show') && !hasInk) sizePad(); });
+
+function celebrate(){
+  const em=['☁️','✨','💙','⭐','🩵'];
+  for(let i=0;i<16;i++){ const s=document.createElement('div'); s.className='confetti'; s.textContent=em[i%em.length];
+    s.style.left=Math.random()*100+'vw'; s.style.animationDelay=(Math.random()*.4)+'s'; s.style.fontSize=(16+Math.random()*16)+'px';
+    document.body.appendChild(s); setTimeout(()=>s.remove(),2200); }
+}
+
+/* ---------- viewer ---------- */
+let viewing=null;
+function openViewer(id){
+  const s=S.roster.find(x=>x.id===id), ci=S.checkins[id]; if(!s||!ci) return;
+  viewing=id; const li=lateInfo(ci);
+  $('#vName').textContent=s.name;
+  $('#vWho').textContent=`${thaiDate(S.date)} · มาเวลา ${li.time} น. ${li.late?`(สาย ${li.diff} นาที)`:'(ตรงเวลา)'}`;
+  $('#vImg').src=safeSig(ci.sig); $('#ov2').classList.add('show');
+}
+$('#vClose').addEventListener('click', ()=>$('#ov2').classList.remove('show'));
+$('#ov2').addEventListener('click', e=>{ if(e.target.id==='ov2') $('#ov2').classList.remove('show'); });
+$('#vUndo').addEventListener('click', async ()=>{
+  if(!viewing) return; $('#ov2').classList.remove('show');
+  if (!(await confirmBox('ยกเลิกการเช็คชื่อของคนนี้?'))) return;
+  try{ await ops.delCheckin(viewing); toast('ยกเลิกการเช็คชื่อแล้ว'); }catch(err){ handleWriteErr(err); }
+});
+
+/* ---------- PIN dialog ---------- */
+function pinBox(){
+  return new Promise(res=>{
+    const ov=document.createElement('div'); ov.className='ov show';
+    ov.innerHTML=`<div class="modal" style="width:min(380px,100%)"><svg class="mc" viewBox="0 0 200 120"><use href="#cloud"/></svg>
+      <h2 style="font-size:19px">🔒 รหัสผู้สอน</h2><div class="row"><label class="fld"><input type="password" inputmode="numeric" placeholder="ใส่รหัส PIN"></label></div>
+      <div class="mact" style="justify-content:flex-end"><button class="btn btn-s" data-a="0">ยกเลิก</button><button class="btn btn-p" data-a="1">เข้าสู่ระบบ</button></div></div>`;
+    const inp=ov.querySelector('input'); const done=v=>{ ov.remove(); res(v); };
+    ov.addEventListener('click',e=>{ const a=e.target.closest('[data-a]'); if(a) done(a.dataset.a==='1'?inp.value:null); else if(e.target===ov) done(null); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') done(inp.value); });
+    document.body.appendChild(ov); setTimeout(()=>inp.focus(),50);
+  });
+}
+
+/* ---------- in-page confirm ---------- */
+function confirmBox(msg){
+  return new Promise(res=>{
+    const ov=document.createElement('div'); ov.className='ov show';
+    ov.innerHTML=`<div class="modal" style="width:min(400px,100%)"><svg class="mc" viewBox="0 0 200 120"><use href="#cloud"/></svg>
+      <h2 style="font-size:19px"></h2><div class="mact" style="justify-content:flex-end"><button class="btn btn-s" data-a="0">ยกเลิก</button><button class="btn btn-d" data-a="1">ยืนยัน</button></div></div>`;
+    ov.querySelector('h2').textContent=msg;
+    ov.addEventListener('click',e=>{ const a=e.target.closest('[data-a]'); if(a||e.target===ov){ ov.remove(); res(a?.dataset.a==='1'); } });
+    document.body.appendChild(ov);
+  });
+}
+
+/* ================= admin: import ================= */
+const drop=$('#drop'), fileIn=$('#file');
+drop.addEventListener('click', ()=>fileIn.click());
+drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('over'); if(e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
+fileIn.addEventListener('change', ()=>{ if(fileIn.files[0]) readFile(fileIn.files[0]); fileIn.value=''; });
+
+let pending=[];
+async function readFile(f){
+  if (!window.XLSX){ toast('ตัวอ่านไฟล์ยังโหลดไม่เสร็จ ลองใหม่อีกครั้ง'); return; }
+  try{
+    let wb;
+    if (/\.(csv|tsv|txt)$/i.test(f.name)){ const txt=(await f.text()).replace(/^﻿/,''); wb=XLSX.read(txt,{type:'string',raw:true}); }
+    else wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:false});
+    pending=parseRows(rows); showPreview(f.name);
+  }catch(e){ console.error(e); toast('อ่านไฟล์ไม่สำเร็จ กรุณาตรวจสอบรูปแบบไฟล์'); }
+}
+function parseRows(rows){
+  rows=rows.filter(r=>r.some(c=>String(c).trim()!==''));
+  if(!rows.length) return [];
+  const H=rows[0].map(h=>norm(h));
+  const find = re => H.findIndex(h=>re.test(h));
+  let iFull=find(/^(ชื่อ[\s-]*นามสกุล|ชื่อ[\s-]*สกุล|full\s*name|name|ชื่อผู้เรียน|ชื่อผู้เข้าเรียน|student\s*name)$/);
+  let iFirst=find(/^(ชื่อ|ชื่อจริง|first\s*name|firstname|given\s*name)$/);
+  let iLast=find(/^(นามสกุล|สกุล|last\s*name|lastname|surname|family\s*name)$/);
+  let iPre=find(/^(คำนำหน้า|คำนำหน้าชื่อ|prefix|title)$/);
+  let iCode=find(/(รหัส|^id$|student\s*id|^code$|เลขประจำตัว|employee)/);
+  let iNick=find(/(ชื่อเล่น|nick)/);
+  let iNo=find(/^(ลำดับ|เลขที่|no\.?|#)$/);
+  let hasHeader = [iFull,iFirst,iLast,iCode,iNick,iNo].some(i=>i>=0);
+  let body = hasHeader ? rows.slice(1) : rows;
+  if (!hasHeader || (iFull<0 && iFirst<0)){
+    // guess: first column that is mostly non-numeric text
+    const cols=Math.max(...body.map(r=>r.length));
+    for(let c=0;c<cols;c++){ if(c===iCode||c===iNo||c===iNick) continue;
+      const v=body.slice(0,20).map(r=>String(r[c]??'').trim()).filter(Boolean);
+      if(v.length && v.filter(x=>!/^[\d\s.\-]+$/.test(x)).length>=v.length*0.7){ iFull=c; break; } }
+  }
+  const out=[];
+  body.forEach(r=>{
+    const g=i=> i>=0 ? String(r[i]??'').trim() : '';
+    let name = iFull>=0 ? g(iFull) : [g(iFirst),g(iLast)].filter(Boolean).join(' ');
+    if (iPre>=0 && g(iPre) && !name.startsWith(g(iPre))) name = g(iPre)+name;
+    name=name.replace(/\s+/g,' ').trim();
+    if(!name) return;
+    out.push({ name, code:g(iCode), nick:g(iNick) });
+  });
+  return out;
+}
+function showPreview(fname){
+  const box=$('#importPreview');
+  if(!pending.length){ box.innerHTML='<div class="note">ไม่พบรายชื่อในไฟล์นี้ — ตรวจสอบว่ามีคอลัมน์ชื่ออยู่</div>'; return; }
+  const exist=new Set(S.roster.map(s=>norm(s.code)||norm(s.name)));
+  const fresh=pending.filter(p=>!exist.has(norm(p.code)||norm(p.name)));
+  box.innerHTML=`<div class="preview"><table><thead><tr><th>#</th><th>ชื่อ</th><th>รหัส</th><th>ชื่อเล่น</th></tr></thead><tbody>${
+    pending.slice(0,200).map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.code)}</td><td>${esc(p.nick)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="note">📄 ${esc(fname)} — พบ ${pending.length} คน · ใหม่ ${fresh.length} คน${pending.length-fresh.length?` · ซ้ำ ${pending.length-fresh.length} คน (จะข้าม)`:''}</div>
+    <div class="row"><button class="btn btn-p" id="doImport" ${fresh.length?'':'disabled'}>✓ นำเข้า ${fresh.length} คน</button><button class="btn btn-s" id="cancelImport">ยกเลิก</button></div>`;
+  $('#cancelImport').onclick=()=>{ pending=[]; box.innerHTML=''; };
+  $('#doImport').onclick=async ()=>{
+    const btn=$('#doImport'); btn.disabled=true;
+    let order=S.roster.reduce((m,s)=>Math.max(m,s.order??0),0);
+    let n=0;
+    try{
+      for(const p of fresh){ await ops.putStudent({id:newId(), name:p.name, code:p.code, nick:p.nick, order:++order}); n++; btn.textContent=`กำลังนำเข้า ${n}/${fresh.length}…`; }
+      toast(`นำเข้าเรียบร้อย ${n} คน 🎉`); pending=[]; box.innerHTML='';
+    }catch(err){ handleWriteErr(err); btn.textContent=`นำเข้าแล้ว ${n} คน`; }
+  };
+}
+$('#addBtn').addEventListener('click', async ()=>{
+  const name=$('#addName').value.trim(), code=$('#addCode').value.trim(); if(!name){ toast('กรุณาพิมพ์ชื่อ'); return; }
+  if (S.roster.some(s=>(code&&norm(s.code)===norm(code)) || norm(s.name)===norm(name))){ toast('มีรายชื่อนี้อยู่แล้ว'); return; }
+  const order=S.roster.reduce((m,s)=>Math.max(m,s.order??0),0)+1;
+  try{ await ops.putStudent({id:newId(),name,code,nick:'',order}); $('#addName').value=''; $('#addCode').value=''; toast('เพิ่มรายชื่อแล้ว'); }catch(err){ handleWriteErr(err); }
+});
+
+/* ================= admin: config ================= */
+$('#saveCfg').addEventListener('click', async ()=>{
+  const cfg={ className:$('#cfgName').value.trim()||DEF.className, startTime:$('#cfgStart').value||DEF.startTime, lateMin:Math.max(0,Number($('#cfgLate').value)||0) };
+  try{ await ops.putConfig(cfg); toast('บันทึกการตั้งค่าแล้ว'); }catch(err){ handleWriteErr(err); }
+});
+$('#clearDay').addEventListener('click', async ()=>{
+  const ids=Object.keys(S.checkins); if(!ids.length){ toast('ยังไม่มีการเช็คชื่อในวันนี้'); return; }
+  if(!(await confirmBox(`ล้างการเช็คชื่อ ${ids.length} รายการของ${thaiDate(S.date)}?`))) return;
+  try{ for(const id of ids) await ops.delCheckin(id); toast('ล้างข้อมูลแล้ว'); }catch(err){ handleWriteErr(err); }
+});
+$('#clearRoster').addEventListener('click', async ()=>{
+  if(!S.roster.length) return;
+  if(!(await confirmBox(`ลบรายชื่อทั้งหมด ${S.roster.length} คน? (ข้อมูลการเช็คชื่อเดิมจะไม่ถูกลบ)`))) return;
+  try{ for(const s of [...S.roster]) await ops.delStudent(s.id); toast('ลบรายชื่อทั้งหมดแล้ว'); }catch(err){ handleWriteErr(err); }
+});
+
+/* ================= admin: export ================= */
+function tableRows(){
+  const head=['ลำดับ','รหัส','ชื่อ-นามสกุล','ชื่อเล่น','วันที่','สถานะ','เวลาเข้า','สายกี่นาที','ลายเซ็น'];
+  const rows=sortedRoster().map((s,i)=>{
+    const ci=S.checkins[s.id], li=lateInfo(ci);
+    return [i+1, s.code||'', s.name, s.nick||'', S.date, li?(li.late?'มาสาย':'มาตรงเวลา'):'ยังไม่มา', li?li.time:'', li&&li.late?li.diff:'', ci&&ci.sig?'✓':''];
+  });
+  return [head,...rows];
+}
+$('#dlCsv').addEventListener('click', async ()=>{
+  const csv='﻿'+tableRows().map(r=>r.map(v=>{ const s=String(v); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }).join(',')).join('\r\n');
+  const filename=`attendance-${S.date}.csv`;
+  let dl=null; try{ dl=await window.claude?.use?.('downloads'); }catch(e){}
+  if (dl){
+    try{ await dl.save({filename, data:new Blob([csv],{type:'text/csv;charset=utf-8'})}); return; }
+    catch(e){ try{ await dl.save({filename, data:csv}); return; }catch(e2){ console.warn(e2); } }
+  }
+  try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download=filename;
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); }
+  catch(e){ toast('ดาวน์โหลดไม่สำเร็จ'); }
+});
+$('#copyTsv').addEventListener('click', async ()=>{
+  const tsv=tableRows().map(r=>r.map(v=>String(v).replace(/[\t\n]/g,' ')).join('\t')).join('\n');
+  try{ await navigator.clipboard.writeText(tsv); toast('คัดลอกแล้ว! ไปวางใน Google Sheets ได้เลย 📋'); }
+  catch(e){ toast('คัดลอกไม่สำเร็จ'); }
+});
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeCheckin(); $('#ov2').classList.remove('show'); } });
+
+boot();
+})();
+</script>
+</body>
+</html>
