@@ -1,4 +1,4 @@
--- เว็บเช็คชื่อคลาส Claude AI — โครงสร้างฐานข้อมูล Supabase (v2.0.0)
+-- เว็บเช็คชื่อคลาส Claude AI — โครงสร้างฐานข้อมูล Supabase (v2.1.0)
 
 -- ===== tables =====
 create table public.admins (
@@ -70,6 +70,72 @@ create policy "attendance delete by admins" on public.attendance for delete to a
 revoke all on public.attendance from anon;
 revoke all on public.admins from anon;
 
+-- ===== API privileges (new projects do not grant these automatically) =====
+grant usage on schema public to anon, authenticated;
+grant select on public.roster, public.settings to anon, authenticated;
+grant insert, update, delete on public.roster to authenticated;
+grant update on public.settings to authenticated;
+grant select, update, delete on public.attendance to authenticated;
+grant select on public.admins to authenticated;
+
+-- ===== student accounts (v2.1.0) =====
+create table public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  roster_id text unique references public.roster(id) on update cascade on delete set null,
+  email text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+grant select, delete on public.profiles to authenticated;
+create policy "profiles read own or admin" on public.profiles for select to authenticated using (user_id = auth.uid() or private.is_admin());
+create policy "profiles delete by admin" on public.profiles for delete to authenticated using (private.is_admin());
+
+alter table public.attendance add column if not exists checked_by uuid references auth.users(id) on delete set null;
+create policy "attendance read own" on public.attendance for select to authenticated
+  using (roster_id in (select p.roster_id from public.profiles p where p.user_id = auth.uid()));
+
+create or replace function public.claim_roster(p_roster_id text)
+returns json language plpgsql security definer set search_path = public, pg_temp as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then return json_build_object('ok', false, 'error', 'not_signed_in'); end if;
+  if not exists (select 1 from public.roster where id = p_roster_id and active) then
+    return json_build_object('ok', false, 'error', 'unknown_student');
+  end if;
+  if exists (select 1 from public.profiles where roster_id = p_roster_id and user_id <> uid) then
+    return json_build_object('ok', false, 'error', 'taken');
+  end if;
+  insert into public.profiles (user_id, roster_id, email, updated_at)
+  values (uid, p_roster_id, auth.jwt() ->> 'email', now())
+  on conflict (user_id) do update set roster_id = excluded.roster_id, email = excluded.email, updated_at = now();
+  return json_build_object('ok', true, 'roster_id', p_roster_id);
+exception when unique_violation then
+  return json_build_object('ok', false, 'error', 'taken');
+end;
+$$;
+
+create or replace function public.unclaim_my_roster()
+returns json language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then return json_build_object('ok', false, 'error', 'not_signed_in'); end if;
+  update public.profiles set roster_id = null, updated_at = now() where user_id = auth.uid();
+  return json_build_object('ok', true);
+end;
+$$;
+
+create or replace function public.claimed_roster_ids()
+returns setof text language sql stable security definer set search_path = public, pg_temp as $$
+  select roster_id from public.profiles where roster_id is not null;
+$$;
+
+revoke execute on function public.claim_roster(text) from public;
+revoke execute on function public.unclaim_my_roster() from public;
+revoke execute on function public.claimed_roster_ids() from public;
+grant execute on function public.claim_roster(text) to authenticated;
+grant execute on function public.unclaim_my_roster() to authenticated;
+grant execute on function public.claimed_roster_ids() to anon, authenticated;
+
 -- ===== public RPCs =====
 create or replace function public.check_in(p_roster_id text, p_signature text)
 returns json language plpgsql security definer set search_path = public, pg_temp as $$
@@ -87,8 +153,8 @@ begin
   d := local_ts::date;
   mins := floor(extract(epoch from (local_ts - (d + coalesce(s.start_time, '09:00'::time)))) / 60);
   st := case when mins > coalesce(s.grace_minutes, 15) then 'late' else 'on_time' end;
-  insert into public.attendance (class_date, roster_id, checked_at, status, late_minutes, signature)
-  values (d, p_roster_id, now(), st, greatest(mins, 0), p_signature)
+  insert into public.attendance (class_date, roster_id, checked_at, status, late_minutes, signature, checked_by)
+  values (d, p_roster_id, now(), st, greatest(mins, 0), p_signature, auth.uid())
   on conflict (class_date, roster_id) do nothing
   returning id, checked_at into new_id, new_at;
   if new_id is null then return json_build_object('ok', false, 'error', 'duplicate'); end if;
