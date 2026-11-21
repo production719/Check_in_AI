@@ -367,6 +367,7 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
         <div class="note" id="googleOff" hidden>ล็อกอินด้วย Google ยังไม่เปิดใช้งาน (ผู้สอนกำลังตั้งค่า) — สมัคร/เข้าสู่ระบบด้วยอีเมลได้เลย</div>
       </div>
       <div class="msg" id="authMsg"></div>
+      <div class="note">การสมัครสมาชิกถือว่ายอมรับ <a href="privacy.html" style="color:var(--blue-d)">นโยบายความเป็นส่วนตัว</a></div>
       <div style="margin-top:18px"><a href="#" class="btn btn-s btn-sm">← กลับหน้าเช็คชื่อ</a></div>
     </div>
   </main>
@@ -490,7 +491,7 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
     </section>
   </main>
 
-  <footer>☁️ Claude AI Class · ระบบเช็คชื่อออนไลน์ · <a href="#" id="footVer">v—</a> · <a href="https://github.com/production719/Check_in_AI" target="_blank" rel="noopener">GitHub</a></footer>
+  <footer>☁️ Claude AI Class · ระบบเช็คชื่อออนไลน์ · <a href="#" id="footVer">v—</a> · <a href="https://github.com/production719/Check_in_AI" target="_blank" rel="noopener">GitHub</a> · <a href="privacy.html">นโยบายความเป็นส่วนตัว</a></footer>
 </div>
 
 <!-- version modal -->
@@ -545,6 +546,8 @@ const GITHUB_REPO = 'production719/Check_in_AI';
 
 /* ============ เวอร์ชัน (ใหม่สุดไว้บนสุด) ============ */
 const CHANGELOG = [
+  { v:'2.1.2', date:'2026-11-21', items:[
+    'เพิ่มหน้านโยบายความเป็นส่วนตัว และลิงก์ไว้ท้ายหน้าเว็บและหน้าเข้าสู่ระบบ' ]},
   { v:'2.1.1', date:'2026-11-21', items:[
     'ตรวจว่าเปิดล็อกอินด้วย Google แล้วหรือยังก่อนกดปุ่ม — ถ้ายังไม่เปิดจะแสดงข้อความภาษาไทยแทนหน้า error' ]},
   { v:'2.1.0', date:'2026-11-21', items:[
