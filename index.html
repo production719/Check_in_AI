@@ -364,6 +364,7 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
       <div id="googleWrap">
         <div class="or">หรือ</div>
         <button class="gbtn" id="googleBtn" type="button"><svg><use href="#g"/></svg><span id="googleLbl">ดำเนินการต่อด้วย Google</span></button>
+        <div class="note" id="googleOff" hidden>ล็อกอินด้วย Google ยังไม่เปิดใช้งาน (ผู้สอนกำลังตั้งค่า) — สมัคร/เข้าสู่ระบบด้วยอีเมลได้เลย</div>
       </div>
       <div class="msg" id="authMsg"></div>
       <div style="margin-top:18px"><a href="#" class="btn btn-s btn-sm">← กลับหน้าเช็คชื่อ</a></div>
@@ -544,6 +545,8 @@ const GITHUB_REPO = 'production719/Check_in_AI';
 
 /* ============ เวอร์ชัน (ใหม่สุดไว้บนสุด) ============ */
 const CHANGELOG = [
+  { v:'2.1.1', date:'2026-11-21', items:[
+    'ตรวจว่าเปิดล็อกอินด้วย Google แล้วหรือยังก่อนกดปุ่ม — ถ้ายังไม่เปิดจะแสดงข้อความภาษาไทยแทนหน้า error' ]},
   { v:'2.1.0', date:'2026-11-21', items:[
     'ระบบสมาชิกสำหรับผู้เรียน: สมัคร/เข้าสู่ระบบด้วยอีเมล + รหัสผ่าน หรือ Google และลืมรหัสผ่าน',
     'ผูกบัญชีกับชื่อในคลาส (หนึ่งชื่อต่อหนึ่งบัญชี) — หน้า “ของฉัน” แสดงสถานะวันนี้ สถิติ และประวัติการเข้าเรียน',
@@ -817,7 +820,18 @@ $('#fReset').addEventListener('submit',async e=>{
   if (error){ authMsg(thErr(error)); return; }
   toast('ตั้งรหัสผ่านใหม่แล้ว'); location.hash='#me';
 });
+let googleOn=null;
+async function checkGoogle(){
+  try{
+    const r=await fetch(CFG.SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/settings',{ headers:{ apikey:CFG.SUPABASE_KEY } });
+    if(!r.ok) throw 0; const j=await r.json(); googleOn=!!(j.external&&j.external.google);
+  }catch(e){ googleOn=null; }
+  $('#googleOff').hidden = googleOn!==false;
+  $('#googleBtn').disabled = googleOn===false;
+  return googleOn;
+}
 async function signInGoogle(){
+  if (googleOn!==true && (await checkGoogle())===false){ authMsg('ยังไม่ได้เปิดการล็อกอินด้วย Google ในระบบ — ใช้อีเมลและรหัสผ่านไปก่อนได้เลย'); return; }
   try{ sessionStorage.setItem('afterLogin', location.hash==='#admin'?'admin':'me'); }catch(e){}
   const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:SITE, queryParams:{ prompt:'select_account' } } });
   if (error){ console.error(error); authMsg(/provider is not enabled/i.test(error.message)?'ยังไม่ได้เปิดการล็อกอินด้วย Google ในระบบ — แจ้งผู้สอน':thErr(error)); }
@@ -1173,6 +1187,7 @@ async function boot(){
   initVersion(); tickClock(); setInterval(tickClock,1000);
   if (!sb){ setBadge('ยังไม่ได้ตั้งค่า Supabase','warn'); banner('ไม่พบการตั้งค่า Supabase ใน config.js หรือโหลดไลบรารีไม่สำเร็จ'); renderPublic(); route(); return; }
   sb.auth.onAuthStateChange((event, session)=>{ if (['SIGNED_IN','SIGNED_OUT','INITIAL_SESSION','PASSWORD_RECOVERY','USER_UPDATED'].includes(event)) setTimeout(()=>onSession(session, event),0); });
+  checkGoogle();
   await refreshPublic(true);
   setInterval(()=>{ if(!document.hidden) refreshPublic(); }, SYNC_MS);
   setInterval(()=>{ if(!document.hidden) refreshPublic(true); }, SYNC_MS*6);
