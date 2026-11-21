@@ -1,37 +1,34 @@
-# เว็บเช็คชื่อคลาส Claude AI — สำหรับเอาขึ้นเซิร์ฟเวอร์
+# เว็บเช็คชื่อคลาส Claude AI
 
-**เวอร์ชันปัจจุบัน: v1.3.0** · เว็บไซต์: https://production719.github.io/Check_in_AI/ · ประวัติเวอร์ชัน: [CHANGELOG.md](CHANGELOG.md)
+**เวอร์ชันปัจจุบัน: v2.0.0** · เว็บไซต์: https://production719.github.io/Check_in_AI/ · ประวัติเวอร์ชัน: [CHANGELOG.md](CHANGELOG.md)
 
-## การอัปเดตเวอร์ชัน
-1. แก้ไฟล์ `index.html` ตามต้องการ
-2. เพิ่มรายการใหม่ไว้ **บนสุด** ของ `CHANGELOG` ใน `index.html` (เลขเวอร์ชันบนเว็บจะเปลี่ยนตามอัตโนมัติ) และใน `CHANGELOG.md`
-3. Commit ขึ้น GitHub — GitHub Pages จะอัปเดตเว็บเองภายใน 1–2 นาที
+## โครงสร้าง
+- `index.html` — ตัวเว็บ (หน้าเช็คชื่อ + หน้าผู้สอนที่ `#admin`)
+- `config.js` — ตั้งค่า Supabase URL / publishable key, อีเมลแนะนำตอนล็อกอิน, (ไม่บังคับ) Google Sheets
+- `supabase/schema.sql` — โครงสร้างฐานข้อมูล, Row Level Security และฟังก์ชัน
+- `google-apps-script.gs` — (ไม่บังคับ) ส่งสำเนาการเช็คชื่อไป Google Sheets
 
-ตั้งเลขแบบ `MAJOR.MINOR.PATCH`: แก้บั๊กเล็ก → เพิ่มเลขท้าย (1.2.1), เพิ่มฟีเจอร์ → เลขกลาง (1.3.0), เปลี่ยนใหญ่ → เลขหน้า (2.0.0)
+## ฐานข้อมูล (Supabase)
+| ตาราง | ใช้ทำอะไร | ใครอ่าน / เขียน |
+|---|---|---|
+| `roster` | รายชื่อผู้เรียน (id, ชื่อ, หน่วยงาน, ชื่ออังกฤษ, ลำดับ, แสดง/ซ่อน) | ทุกคนอ่าน · ผู้สอนเขียน |
+| `settings` | ชื่อคลาส, เวลาเริ่ม, นาทีที่ยอมให้สาย | ทุกคนอ่าน · ผู้สอนเขียน |
+| `attendance` | การเช็คชื่อ + ลายเซ็น | ผู้สอนเท่านั้น (ผู้เรียนเขียนผ่านฟังก์ชัน `check_in`) |
+| `admins` | อีเมลผู้สอน | ผู้สอนเท่านั้น |
 
-## ไฟล์
-- `index.html` — ตัวเว็บทั้งหมด
-- `config.js` — **ไฟล์ตั้งค่า** (URL ของ Apps Script, ลิงก์ชีต, PIN ผู้สอน, ความถี่ซิงก์)
-- `google-apps-script.gs` — โค้ดฝั่ง Google Sheet (วางใน ส่วนขยาย → Apps Script แล้ว Deploy เป็น Web app)
+ฟังก์ชันสาธารณะ: `check_in(roster_id, signature)` (เวลาจากเซิร์ฟเวอร์, วันละครั้ง) และ `public_board(date)` (สถานะ/เวลา ไม่มีลายเซ็น)
 
-## เชื่อมต่อ Google Sheets
-ชีตต้องมีแท็บ:
-| แท็บ | คอลัมน์ |
-|---|---|
-| `Roster` | id, ชื่อ-นามสกุล, หน่วยงาน, ชื่อภาษาอังกฤษ |
-| `Settings` | key, value — `title` ชื่อคลาส, `start` เวลาเริ่ม (HH:MM), `grace` นาทีที่ยอมให้สาย |
-| `Attendance` | วันที่, id, ชื่อ-นามสกุล, หน่วยงาน, เวลาเช็คอิน, สถานะ, สาย (นาที), บันทึกเมื่อ (ISO), ลิงก์ลายเซ็น, ลายเซ็น (ข้อมูลภาพ) |
+## ตั้งค่าล็อกอินด้วย Google (ทำครั้งเดียว)
+1. **Google Cloud Console** → APIs & Services → Credentials → Create credentials → OAuth client ID → Web application
+   - Authorized JavaScript origins: `https://production719.github.io`
+   - Authorized redirect URIs: `https://ahneciasihtkicmeielx.supabase.co/auth/v1/callback`
+2. **Supabase** → Authentication → Sign In / Providers → Google → เปิด แล้ววาง Client ID / Client Secret
+3. **Supabase** → Authentication → URL Configuration
+   - Site URL: `https://production719.github.io/Check_in_AI/`
+   - Redirect URLs: เพิ่ม `https://production719.github.io/Check_in_AI/`
 
-1. เปิดชีต → ส่วนขยาย → Apps Script → วางโค้ดจาก `google-apps-script.gs` → บันทึก
-2. Deploy → New deployment → Web app · Execute as: Me · Who has access: Anyone → Deploy → Authorize
-3. คัดลอก URL ที่ลงท้ายด้วย `/exec` ไปใส่ `GOOGLE_SCRIPT_URL` ใน `config.js`
+## เพิ่มผู้สอน
+Supabase → Table Editor → `admins` → Insert row → ใส่อีเมล Google
 
-## การใช้งาน
-- ผู้เรียน: เปิดเว็บ → แตะชื่อ → เซ็น → ยืนยัน (บันทึกลงชีตทันที)
-- ผู้สอน: เปิด `.../#admin` แล้วใส่ PIN เพื่อดูย้อนหลัง, ยกเลิกการเช็คชื่อ, ดาวน์โหลด CSV
-- แก้รายชื่อ / เวลาเริ่มคลาส ที่ Google Sheet ได้เลย เว็บจะดึงค่าใหม่เองภายใน ~15 วินาที
-
-## ข้อควรรู้
-- ถ้า `GOOGLE_SCRIPT_URL` ว่าง เว็บจะทำงานแบบเครื่องเดียว (เก็บในเบราว์เซอร์) ด้วยรายชื่อสำรองในโค้ด
-- PIN อยู่ในโค้ดหน้าเว็บ จึงกันได้แค่ผู้ใช้ทั่วไป ไม่ใช่ระบบความปลอดภัยเต็มรูปแบบ
-- URL ของ Apps Script เปิดให้ทุกคนส่งข้อมูลเช็คชื่อได้ (จำเป็นสำหรับเว็บสาธารณะ)
+## อัปเดตเวอร์ชัน
+แก้ `index.html` → เพิ่มรายการบนสุดของ `CHANGELOG` ในไฟล์ และใน `CHANGELOG.md` → commit (GitHub Pages อัปเดตเองใน 1–2 นาที)
