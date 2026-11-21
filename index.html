@@ -149,7 +149,7 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
 .fld input:focus,.fld select:focus{border-color:var(--blue)}
 .note{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.55}
 .preview{margin-top:12px;max-height:220px;overflow:auto;border-radius:12px;border:1px solid var(--line);background:#fff}
-.switch{position:relative;width:42px;height:24px;flex:0 0 42px}
+.switch{position:relative;display:inline-block;width:42px;height:24px;flex:0 0 42px;vertical-align:middle}
 .switch input{opacity:0;width:0;height:0}
 .switch span{position:absolute;inset:0;background:#D3DEEA;border-radius:999px;transition:.2s;cursor:pointer}
 .switch span::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
@@ -163,6 +163,32 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
 .gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:12px 20px;font-weight:600;font-size:15px;color:var(--navy);margin-top:16px;transition:.15s}
 .gbtn:hover{border-color:var(--blue);box-shadow:0 6px 16px rgba(28,127,214,.15)}
 .gbtn svg{width:20px;height:20px}
+
+/* ---------- auth / me ---------- */
+.auth{max-width:460px}
+.seg{display:flex;background:var(--sky);border-radius:14px;padding:4px;margin:14px 0 4px}
+.seg button{flex:1;border:0;background:transparent;padding:9px;border-radius:11px;font-weight:600;color:var(--blue-d);font-size:14px}
+.seg button.on{background:#fff;box-shadow:0 3px 10px rgba(40,120,200,.15);color:var(--navy)}
+.authform{text-align:left}
+.authform .fld{margin-top:10px}
+.authform .btn{width:100%;justify-content:center;margin-top:14px}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px;margin:16px 0 4px}
+.or::before,.or::after{content:'';flex:1;height:1px;background:var(--line)}
+.linkbtn{border:0;background:none;color:var(--blue-d);font-size:13px;padding:4px 0;text-decoration:underline}
+.msg{font-size:13.5px;margin-top:12px;padding:10px 12px;border-radius:12px;display:none;text-align:left}
+.msg.show{display:block}.msg.err{background:var(--bad-bg);color:var(--bad)}.msg.ok{background:var(--ok-bg);color:#0E7C68}
+.mecard{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.mecard .big{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;font-family:'Mali';font-size:28px;font-weight:700;color:#fff;flex:0 0 64px}
+.mestats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.mestats .stat .n{font-size:26px}
+.todaybox{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(135deg,#EAF6FF,#E3FAF5);border:2px solid #CDEBFA;border-radius:20px;padding:16px;margin-top:16px}
+.todaybox .t1{flex:1;min-width:200px;font-size:15px}
+.todaybox .t1 b{font-family:'Mali';font-size:18px;display:block}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:14px}
+.pick .card{cursor:default}
+.mebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:2px solid #CDEBFA;border-radius:20px;padding:12px 16px;margin-top:18px;box-shadow:var(--shadow)}
+.mebar .grow{flex:1;min-width:180px}
+@media (max-width:760px){ .mestats{grid-template-columns:1fr 1fr 1fr} }
 
 /* ---------- modal ---------- */
 .ov{position:fixed;inset:0;background:rgba(20,60,110,.35);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
@@ -243,7 +269,8 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
 
 <div class="topbar">
   <button class="pill" id="verBtn" title="ประวัติเวอร์ชัน"><span class="vdot"></span><span id="verTxt">v—</span></button>
-  <button class="pill" id="loginBtn"><svg class="gicon"><use href="#g"/></svg><span class="lbl">เข้าสู่ระบบผู้สอน</span></button>
+  <a class="pill" id="loginBtn" href="#login">👤 <span class="lbl">เข้าสู่ระบบ / สมัครสมาชิก</span></a>
+  <a class="pill" id="meLink" href="#me" hidden><img id="meLinkImg" alt=""><span class="lbl" id="meLinkName">ของฉัน</span></a>
   <a class="pill" id="adminLink" href="#admin" hidden>🛠️ <span class="lbl">หน้าผู้สอน</span></a>
   <a class="pill" id="publicLink" href="#" hidden>☁️ <span class="lbl">หน้าเช็คชื่อ</span></a>
 </div>
@@ -272,6 +299,13 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
     <div class="progress"><div id="bar"></div></div>
     <div class="ptext"><span id="pLeft">เข้าเรียนแล้ว 0%</span><span id="pRight">วันนี้</span></div>
 
+    <div class="mebar" id="meBar" hidden>
+      <div class="av" id="meBarAv">?</div>
+      <div class="grow"><b id="meBarName"></b><div class="note" style="margin:0" id="meBarStatus"></div></div>
+      <button class="btn btn-p" id="meBarIn">✍️ เช็คชื่อของฉัน</button>
+      <a class="btn btn-s" href="#me">ดูประวัติของฉัน</a>
+    </div>
+
     <section class="panel">
       <div class="toolbar">
         <label class="search">🔍<input id="q" placeholder="ค้นหาชื่อ / หน่วยงาน" autocomplete="off"></label>
@@ -291,16 +325,85 @@ footer{text-align:center;color:#9AB2CC;font-size:12.5px;margin-top:30px}
     </section>
   </main>
 
-  <!-- ================= LOGIN VIEW ================= -->
+  <!-- ================= AUTH VIEW ================= -->
   <main id="viewLogin" hidden>
-    <div class="login">
+    <div class="login auth">
       <svg class="big" viewBox="0 0 200 120"><use href="#cloud"/></svg>
-      <h2>เข้าสู่ระบบผู้สอน</h2>
-      <div class="note" style="font-size:14px">ใช้บัญชี Google ที่ได้รับสิทธิ์ผู้สอนเท่านั้น</div>
-      <button class="gbtn" id="googleBtn"><svg><use href="#g"/></svg>เข้าสู่ระบบด้วย Google</button>
-      <div class="note" id="loginMsg"></div>
+      <h2 id="authTitle">ยินดีต้อนรับ ☁️</h2>
+      <div class="note" id="authSub" style="font-size:14px">เข้าสู่ระบบเพื่อดูประวัติการเข้าเรียนของคุณ</div>
+      <div class="seg" id="authSeg"><button data-m="login" class="on">เข้าสู่ระบบ</button><button data-m="signup">สมัครสมาชิก</button></div>
+
+      <form class="authform" id="fLogin" autocomplete="on">
+        <label class="fld">อีเมล<input type="email" id="liEmail" autocomplete="email" required></label>
+        <label class="fld">รหัสผ่าน<input type="password" id="liPass" autocomplete="current-password" required minlength="6"></label>
+        <div style="text-align:right"><button type="button" class="linkbtn" id="forgotBtn">ลืมรหัสผ่าน?</button></div>
+        <button class="btn btn-p" type="submit">เข้าสู่ระบบ</button>
+      </form>
+
+      <form class="authform" id="fSignup" hidden autocomplete="on">
+        <label class="fld">เลือกชื่อของคุณในคลาส<select id="suRoster" required><option value="">— เลือกชื่อ —</option></select></label>
+        <label class="fld">อีเมล<input type="email" id="suEmail" autocomplete="email" required></label>
+        <label class="fld">รหัสผ่าน (อย่างน้อย 6 ตัว)<input type="password" id="suPass" autocomplete="new-password" required minlength="6"></label>
+        <label class="fld">ยืนยันรหัสผ่าน<input type="password" id="suPass2" autocomplete="new-password" required minlength="6"></label>
+        <button class="btn btn-p" type="submit">สมัครสมาชิก</button>
+        <div class="note">ไม่พบชื่อของคุณ หรือชื่อถูกใช้แล้ว? แจ้งผู้สอนได้เลย</div>
+      </form>
+
+      <form class="authform" id="fForgot" hidden>
+        <label class="fld">อีเมลที่ใช้สมัคร<input type="email" id="fgEmail" required></label>
+        <button class="btn btn-p" type="submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+        <div style="text-align:center"><button type="button" class="linkbtn" data-back>← กลับไปเข้าสู่ระบบ</button></div>
+      </form>
+
+      <form class="authform" id="fReset" hidden>
+        <label class="fld">รหัสผ่านใหม่<input type="password" id="rsPass" autocomplete="new-password" required minlength="6"></label>
+        <label class="fld">ยืนยันรหัสผ่านใหม่<input type="password" id="rsPass2" autocomplete="new-password" required minlength="6"></label>
+        <button class="btn btn-p" type="submit">บันทึกรหัสผ่านใหม่</button>
+      </form>
+
+      <div id="googleWrap">
+        <div class="or">หรือ</div>
+        <button class="gbtn" id="googleBtn" type="button"><svg><use href="#g"/></svg><span id="googleLbl">ดำเนินการต่อด้วย Google</span></button>
+      </div>
+      <div class="msg" id="authMsg"></div>
       <div style="margin-top:18px"><a href="#" class="btn btn-s btn-sm">← กลับหน้าเช็คชื่อ</a></div>
     </div>
+  </main>
+
+  <!-- ================= MY PAGE ================= -->
+  <main id="viewMe" hidden>
+    <section class="panel">
+      <div class="mecard">
+        <div class="big" id="meBig">?</div>
+        <div style="flex:1;min-width:200px">
+          <h2 style="margin:0" id="meTitle">—</h2>
+          <div class="note" style="margin:2px 0 0" id="meSub"></div>
+        </div>
+        <a class="btn btn-s" href="#admin" id="meAdminBtn" hidden>🛠️ หน้าผู้สอน</a>
+        <button class="btn btn-w" id="meLogout">ออกจากระบบ</button>
+      </div>
+
+      <div id="meNoLink" hidden>
+        <div class="todaybox"><div class="t1"><b>ผูกบัญชีกับชื่อของคุณ</b>เลือกชื่อของคุณในคลาส ระบบจะแสดงประวัติการเข้าเรียนและให้เช็คชื่อได้สะดวกขึ้น</div></div>
+        <div class="toolbar" style="margin-top:14px"><label class="search">🔍<input id="pickQ" placeholder="ค้นหาชื่อ / หน่วยงาน" autocomplete="off"></label></div>
+        <div class="pick" id="pickList"></div>
+      </div>
+
+      <div id="meLinked" hidden>
+        <div class="todaybox">
+          <div class="t1" id="meToday"></div>
+          <button class="btn btn-p" id="meCheckIn">✍️ เช็คชื่อวันนี้</button>
+        </div>
+        <div class="mestats">
+          <div class="stat s-ok"><div class="n" id="mOkN">0</div><div class="l">มาตรงเวลา</div></div>
+          <div class="stat s-late"><div class="n" id="mLateN">0</div><div class="l">มาสาย</div></div>
+          <div class="stat s-all"><div class="n" id="mAllN">0</div><div class="l">เข้าเรียนทั้งหมด (วัน)</div></div>
+        </div>
+        <h3 style="margin:22px 0 0">ประวัติการเข้าเรียน</h3>
+        <div class="tblwrap"><table class="tbl" id="meTable"></table></div>
+        <div class="note">ชื่อไม่ถูกต้อง? <button class="linkbtn" id="meUnlink">ยกเลิกการผูกชื่อนี้</button></div>
+      </div>
+    </section>
   </main>
 
   <!-- ================= ADMIN VIEW ================= -->
@@ -441,6 +544,11 @@ const GITHUB_REPO = 'production719/Check_in_AI';
 
 /* ============ เวอร์ชัน (ใหม่สุดไว้บนสุด) ============ */
 const CHANGELOG = [
+  { v:'2.1.0', date:'2026-11-21', items:[
+    'ระบบสมาชิกสำหรับผู้เรียน: สมัคร/เข้าสู่ระบบด้วยอีเมล + รหัสผ่าน หรือ Google และลืมรหัสผ่าน',
+    'ผูกบัญชีกับชื่อในคลาส (หนึ่งชื่อต่อหนึ่งบัญชี) — หน้า “ของฉัน” แสดงสถานะวันนี้ สถิติ และประวัติการเข้าเรียน',
+    'ผู้สอนเห็นบัญชีที่ผูกกับแต่ละชื่อ และยกเลิกการผูกได้',
+    'แก้ปัญหารายชื่อไม่แสดง (สิทธิ์อ่านข้อมูลของฐานข้อมูล)' ]},
   { v:'2.0.0', date:'2026-11-21', items:[
     'ย้ายฐานข้อมูลทั้งหมดไป Supabase (รายชื่อ, ตั้งค่า, การเช็คชื่อ, ลายเซ็น)',
     'หน้าผู้สอนล็อกอินด้วย Google — สิทธิ์ผู้สอนกำหนดจากตาราง admins',
@@ -502,7 +610,7 @@ const sb = (window.supabase && CFG.SUPABASE_URL && CFG.SUPABASE_KEY)
 
 /* ============ state ============ */
 const S = { settings:{ title:'Claude AI', start_time:'09:00', grace_minutes:15 }, roster:[], board:{}, filter:'all', q:'',
-            session:null, isAdmin:false, adminTab:'today', aDate:todayKey(), attendance:[], rq:'', report:null };
+            session:null, isAdmin:false, profile:null, profiles:[], claimed:new Set(), myHistory:[], authMode:'login', adminTab:'today', aDate:todayKey(), attendance:[], rq:'', report:null };
 
 /* ============ clock ============ */
 function tickClock(){
@@ -539,7 +647,7 @@ async function refreshPublic(full){
     console.error(e); setBadge('เชื่อมต่อฐานข้อมูลไม่ได้', 'warn');
     banner(loadedOnce ? 'เชื่อมต่อฐานข้อมูลไม่ได้ชั่วคราว ข้อมูลที่เห็นอาจไม่อัปเดต' : 'โหลดข้อมูลไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต หรือการตั้งค่า Supabase ใน config.js');
   }
-  renderPublic();
+  renderPublic(); renderMeBar();
 }
 
 /* ============ render: public ============ */
@@ -626,7 +734,7 @@ $('#mOk').addEventListener('click', async ()=>{
       throw new Error(data && data.error || 'unknown');
     }
     S.board[r.id]={ roster_id:r.id, checked_at:data.checked_at, status:data.status, late_minutes:data.late_minutes };
-    closeOv($('#ovIn')); renderPublic(); celebrate();
+    closeOv($('#ovIn')); renderPublic(); renderMeBar(); if(location.hash==='#me') renderMe(); celebrate();
     toast(`เช็คชื่อสำเร็จ! ${r.name} มาเวลา ${hhmm(data.checked_at)} น.${data.status==='late'?` (สาย ${data.late_minutes} นาที)`:''}`);
     mirrorToSheet(r, data, sig);
   }catch(e){ console.error(e); toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'); }
@@ -646,13 +754,77 @@ function celebrate(){
 }
 
 /* ============ auth ============ */
-async function signIn(){
-  try{ sessionStorage.setItem('goAdmin','1'); }catch(e){}
-  const redirectTo = location.origin + location.pathname;
-  const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo,
-    queryParams:{ prompt:'select_account', ...(CFG.ADMIN_LOGIN_HINT?{ login_hint:CFG.ADMIN_LOGIN_HINT }:{}) } } });
-  if (error){ console.error(error); $('#loginMsg').textContent='เข้าสู่ระบบไม่สำเร็จ: '+error.message; }
+const SITE = location.origin + location.pathname;
+function authMsg(text, kind){ const m=$('#authMsg'); m.className='msg'+(text?' show '+(kind||'err'):''); m.textContent=text||''; }
+const AUTH_ERR = { 'Invalid login credentials':'อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'Email not confirmed':'ยังไม่ได้ยืนยันอีเมล — กรุณากดลิงก์ในอีเมลที่ได้รับ', 'User already registered':'อีเมลนี้สมัครไว้แล้ว — ลองเข้าสู่ระบบ' };
+const thErr = e => AUTH_ERR[e?.message] || (/rate limit/i.test(e?.message||'')?'ส่งอีเมลบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่':(/at least 6/i.test(e?.message||'')?'รหัสผ่านต้องมีอย่างน้อย 6 ตัว':'เกิดข้อผิดพลาด: '+(e?.message||'')));
+function setAuthMode(m){
+  S.authMode=m; authMsg('');
+  $$('#authSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('#authSeg').hidden = (m==='forgot'||m==='reset');
+  $('#fLogin').hidden=m!=='login'; $('#fSignup').hidden=m!=='signup'; $('#fForgot').hidden=m!=='forgot'; $('#fReset').hidden=m!=='reset';
+  $('#googleWrap').hidden = (m==='forgot'||m==='reset');
+  $('#authTitle').textContent = m==='signup'?'สมัครสมาชิก ☁️':m==='forgot'?'ลืมรหัสผ่าน':m==='reset'?'ตั้งรหัสผ่านใหม่':'ยินดีต้อนรับ ☁️';
+  $('#authSub').textContent = m==='signup'?'สมัครครั้งเดียว ใช้ดูประวัติและเช็คชื่อได้สะดวกขึ้น':m==='forgot'?'เราจะส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่อีเมลของคุณ':m==='reset'?'กรอกรหัสผ่านใหม่ที่ต้องการ':'เข้าสู่ระบบเพื่อดูประวัติการเข้าเรียนของคุณ';
+  $('#googleLbl').textContent = m==='signup'?'สมัครด้วย Google':'ดำเนินการต่อด้วย Google';
+  if (m==='signup') fillSignupRoster();
 }
+$('#authSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setAuthMode(b.dataset.m); });
+$('#forgotBtn').addEventListener('click',()=>{ $('#fgEmail').value=$('#liEmail').value; setAuthMode('forgot'); });
+$$('[data-back]').forEach(b=>b.addEventListener('click',()=>setAuthMode('login')));
+async function loadClaimed(){ const { data } = await sb.rpc('claimed_roster_ids'); S.claimed=new Set(data||[]); }
+async function fillSignupRoster(){
+  await loadClaimed().catch(()=>{});
+  const sel=$('#suRoster'), cur=sel.value;
+  sel.innerHTML='<option value="">— เลือกชื่อ —</option>'+S.roster.filter(r=>r.active).map(r=>`<option value="${esc(r.id)}" ${S.claimed.has(r.id)?'disabled':''}>${esc(r.name)}${r.org?' · '+esc(r.org):''}${S.claimed.has(r.id)?' (มีบัญชีแล้ว)':''}</option>`).join('');
+  sel.value=cur;
+}
+function busy(form, on){ $$('#'+form+' button, #'+form+' input, #'+form+' select').forEach(x=>x.disabled=on); }
+$('#fLogin').addEventListener('submit',async e=>{
+  e.preventDefault(); authMsg(''); busy('fLogin',true);
+  const { error } = await sb.auth.signInWithPassword({ email:$('#liEmail').value.trim(), password:$('#liPass').value });
+  busy('fLogin',false);
+  if (error){ authMsg(thErr(error)); return; }
+  afterLogin();
+});
+$('#fSignup').addEventListener('submit',async e=>{
+  e.preventDefault(); authMsg('');
+  const rid=$('#suRoster').value, email=$('#suEmail').value.trim(), pw=$('#suPass').value;
+  if (!rid){ authMsg('กรุณาเลือกชื่อของคุณ'); return; }
+  if (pw!==$('#suPass2').value){ authMsg('รหัสผ่านทั้งสองช่องไม่ตรงกัน'); return; }
+  busy('fSignup',true);
+  const { data, error } = await sb.auth.signUp({ email, password:pw, options:{ emailRedirectTo:SITE, data:{ roster_id:rid } } });
+  busy('fSignup',false);
+  if (error){ authMsg(thErr(error)); return; }
+  if (data.session){ afterLogin(); return; }
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){ authMsg('อีเมลนี้สมัครไว้แล้ว — ลองเข้าสู่ระบบ หรือกด “ลืมรหัสผ่าน”'); return; }
+  authMsg(`สมัครสำเร็จ! เราส่งอีเมลยืนยันไปที่ ${email} แล้ว — กดลิงก์ในอีเมล จากนั้นกลับมาเข้าสู่ระบบ`, 'ok');
+  $('#liEmail').value=email;
+});
+$('#fForgot').addEventListener('submit',async e=>{
+  e.preventDefault(); busy('fForgot',true);
+  const { error } = await sb.auth.resetPasswordForEmail($('#fgEmail').value.trim(), { redirectTo:SITE });
+  busy('fForgot',false);
+  if (error){ authMsg(thErr(error)); return; }
+  authMsg('ส่งลิงก์แล้ว — กรุณาเช็คอีเมลของคุณ (รวมถึงโฟลเดอร์สแปม)', 'ok');
+});
+$('#fReset').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if ($('#rsPass').value!==$('#rsPass2').value){ authMsg('รหัสผ่านทั้งสองช่องไม่ตรงกัน'); return; }
+  busy('fReset',true);
+  const { error } = await sb.auth.updateUser({ password:$('#rsPass').value });
+  busy('fReset',false);
+  if (error){ authMsg(thErr(error)); return; }
+  toast('ตั้งรหัสผ่านใหม่แล้ว'); location.hash='#me';
+});
+async function signInGoogle(){
+  try{ sessionStorage.setItem('afterLogin', location.hash==='#admin'?'admin':'me'); }catch(e){}
+  const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:SITE, queryParams:{ prompt:'select_account' } } });
+  if (error){ console.error(error); authMsg(/provider is not enabled/i.test(error.message)?'ยังไม่ได้เปิดการล็อกอินด้วย Google ในระบบ — แจ้งผู้สอน':thErr(error)); }
+}
+$('#googleBtn').addEventListener('click',signInGoogle);
+function afterLogin(){ /* onAuthStateChange will route */ try{ sessionStorage.setItem('afterLogin', location.hash==='#admin'?'admin':'me'); }catch(e){} }
+
 async function checkAdmin(){
   S.isAdmin=false;
   if (!S.session) return false;
@@ -660,43 +832,125 @@ async function checkAdmin(){
   S.isAdmin = !error && (data||[]).length>0;
   return S.isAdmin;
 }
-async function onSession(session){
+async function loadProfile(){
+  S.profile=null; if(!S.session) return;
+  const { data } = await sb.from('profiles').select('user_id,roster_id,email').eq('user_id',S.session.user.id).maybeSingle();
+  S.profile=data||null;
+  const want=S.session.user.user_metadata?.roster_id;
+  if ((!S.profile || !S.profile.roster_id) && want){
+    const { data:r } = await sb.rpc('claim_roster',{ p_roster_id:want });
+    if (r && r.ok){ S.profile={ user_id:S.session.user.id, roster_id:want, email:S.session.user.email }; toast('ผูกบัญชีกับชื่อของคุณแล้ว ✓'); }
+    else if (r && r.error==='taken'){ toast('ชื่อที่เลือกตอนสมัครมีบัญชีอื่นผูกแล้ว — แจ้งผู้สอน'); }
+    try{ await sb.auth.updateUser({ data:{ roster_id:null } }); }catch(e){}
+  }
+}
+async function loadProfiles(){ if(!S.isAdmin) return; const { data } = await sb.from('profiles').select('user_id,roster_id,email'); S.profiles=data||[]; }
+async function loadMyHistory(){
+  S.myHistory=[]; if(!S.profile?.roster_id) return;
+  const { data } = await sb.from('attendance').select('id,class_date,checked_at,status,late_minutes,signature').eq('roster_id',S.profile.roster_id).order('class_date',{ascending:false}).limit(200);
+  S.myHistory=data||[];
+}
+const myRoster = () => S.profile?.roster_id ? S.roster.find(r=>r.id===S.profile.roster_id) : null;
+function avatarFor(u){ const meta=u?.user_metadata||{}; return meta.avatar_url||meta.picture||'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="20" fill="#5AB8F7"/><text x="20" y="27" font-size="18" text-anchor="middle" fill="#fff" font-family="sans-serif">'+esc(initial(u?.email))+'</text></svg>'); }
+
+async function onSession(session, event){
   S.session=session;
   const u=session?.user;
   await checkAdmin();
-  $('#loginBtn').hidden = !!session;
-  $('#adminLink').hidden = !S.isAdmin;
+  await loadProfile();
   if (u){
-    const meta=u.user_metadata||{};
-    $('#meName').textContent=meta.full_name||meta.name||'ผู้สอน';
+    const meta=u.user_metadata||{}, mr=myRoster();
+    $('#meName').textContent=meta.full_name||meta.name||(mr?mr.name:'ผู้สอน');
     $('#meEmail').textContent=u.email||'';
-    $('#meAvatar').src=meta.avatar_url||meta.picture||'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="12" fill="#5AB8F7"/><text x="20" y="27" font-size="18" text-anchor="middle" fill="#fff" font-family="sans-serif">'+esc(initial(u.email))+'</text></svg>');
+    $('#meAvatar').src=avatarFor(u); $('#meLinkImg').src=avatarFor(u);
+    $('#meLinkName').textContent = mr ? mr.name.split(' ')[0] : 'ของฉัน';
   }
-  let go=false; try{ go=sessionStorage.getItem('goAdmin')==='1'; sessionStorage.removeItem('goAdmin'); }catch(e){}
-  if (go && session) location.hash='#admin';
+  let go=null; try{ go=sessionStorage.getItem('afterLogin'); sessionStorage.removeItem('afterLogin'); }catch(e){}
+  if (event==='PASSWORD_RECOVERY'){ location.hash='#login'; setAuthMode('reset'); }
+  else if (session && (go || location.hash==='#login')) location.hash = (go==='admin' && S.isAdmin) || (location.hash==='#login' && S.isAdmin && !S.profile) ? '#admin' : '#me';
   route();
 }
-$('#loginBtn').addEventListener('click',()=>{ location.hash='#admin'; });
-$('#googleBtn').addEventListener('click',signIn);
-$('#logoutBtn').addEventListener('click',async()=>{ await sb.auth.signOut(); location.hash=''; toast('ออกจากระบบแล้ว'); });
+$('#logoutBtn').addEventListener('click',logout);
+$('#meLogout').addEventListener('click',logout);
+async function logout(){ await sb.auth.signOut(); S.profile=null; S.isAdmin=false; location.hash=''; toast('ออกจากระบบแล้ว'); route(); }
+
+/* ----- my page ----- */
+async function renderMe(){
+  const u=S.session?.user; if(!u) return;
+  const mr=myRoster();
+  $('#meAdminBtn').hidden=!S.isAdmin;
+  $('#meBig').textContent = mr?initial(mr.name):initial(u.email); $('#meBig').style.background=colorFor(mr?mr.name:u.email);
+  $('#meTitle').textContent = mr?mr.name:(u.user_metadata?.full_name||'บัญชีของฉัน');
+  $('#meSub').textContent = [mr?.org, u.email].filter(Boolean).join(' · ');
+  $('#meNoLink').hidden=!!mr; $('#meLinked').hidden=!mr;
+  if (!mr){ await loadClaimed().catch(()=>{}); renderPick(); return; }
+  await loadMyHistory();
+  const b=S.board[mr.id];
+  $('#meToday').innerHTML = b ? `<b>${b.status==='late'?'⏰ วันนี้มาสาย':'☀️ วันนี้มาตรงเวลา'}</b>เช็คชื่อเมื่อ ${hhmm(b.checked_at)} น. · ${esc(thaiDate(todayKey()))}`
+                              : `<b>วันนี้ยังไม่ได้เช็คชื่อ</b>${esc(thaiDate(todayKey()))} · เริ่มคลาส ${esc(S.settings.start_time)} น.`;
+  $('#meCheckIn').hidden=!!b;
+  let ok=0,late=0; S.myHistory.forEach(a=>a.status==='late'?late++:ok++);
+  $('#mOkN').textContent=ok; $('#mLateN').textContent=late; $('#mAllN').textContent=S.myHistory.length;
+  $('#meTable').innerHTML = S.myHistory.length ? `<thead><tr><th>วันที่</th><th>เวลา</th><th>สถานะ</th><th>ลายเซ็น</th></tr></thead><tbody>${
+    S.myHistory.map(a=>{ const sig=safeSig(a.signature); return `<tr><td>${esc(thaiDate(a.class_date))}</td><td>${hhmm(a.checked_at)} น.</td><td>${a.status==='late'?`<span class="tag late">สาย ${a.late_minutes} นาที</span>`:'<span class="tag ok">ตรงเวลา</span>'}</td><td>${sig?`<img class="sig" src="${sig}" alt="ลายเซ็น">`:''}</td></tr>`; }).join('')}</tbody>`
+    : '<tbody><tr><td class="note">ยังไม่มีประวัติการเข้าเรียน</td></tr></tbody>';
+}
+function renderPick(){
+  const q=norm($('#pickQ').value);
+  const rows=S.roster.filter(r=>r.active && (!q||[r.name,r.org].some(v=>norm(v).includes(q))));
+  $('#pickList').innerHTML=rows.map(r=>{ const taken=S.claimed.has(r.id);
+    return `<div class="card"><div class="av" style="background:${colorFor(r.name)}">${esc(initial(r.name))}</div><div class="info"><div class="nm">${esc(r.name)}</div><div class="meta"><span class="org">${esc(r.org)}</span></div></div>${
+      taken?'<span class="tag off">มีบัญชีแล้ว</span>':`<button class="btn btn-p btn-sm" data-claim="${esc(r.id)}">นี่คือฉัน</button>`}</div>`; }).join('');
+}
+$('#pickQ').addEventListener('input',renderPick);
+$('#pickList').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-claim]'); if(!b) return;
+  const r=S.roster.find(x=>x.id===b.dataset.claim);
+  if(!(await confirmBox(`ยืนยันว่าคุณคือ “${r.name}”?`,'ใช่ นี่คือฉัน'))) return;
+  const { data, error } = await sb.rpc('claim_roster',{ p_roster_id:r.id });
+  if (error || !data?.ok){ toast(data?.error==='taken'?'ชื่อนี้มีบัญชีอื่นผูกแล้ว — แจ้งผู้สอน':'ผูกบัญชีไม่สำเร็จ'); await loadClaimed(); renderPick(); return; }
+  toast('ผูกบัญชีเรียบร้อย ✓'); await loadProfile(); onSession(S.session);
+});
+$('#meUnlink').addEventListener('click',async()=>{
+  if(!(await confirmBox('ยกเลิกการผูกบัญชีกับชื่อนี้? (ประวัติการเข้าเรียนยังอยู่)','ยกเลิกการผูก'))) return;
+  const { error } = await sb.rpc('unclaim_my_roster'); if(error){ toast('ไม่สำเร็จ'); return; }
+  S.profile=null; toast('ยกเลิกการผูกแล้ว'); onSession(S.session);
+});
+$('#meCheckIn').addEventListener('click',()=>{ const mr=myRoster(); if(mr) openCheckin(mr.id); });
+$('#meBarIn').addEventListener('click',()=>{ const mr=myRoster(); if(mr) openCheckin(mr.id); });
+function renderMeBar(){
+  const mr=myRoster(), bar=$('#meBar');
+  bar.hidden=!mr; if(!mr) return;
+  const b=S.board[mr.id];
+  $('#meBarAv').textContent=b?'✓':initial(mr.name); $('#meBarAv').style.background=colorFor(mr.name);
+  $('#meBarName').textContent=`สวัสดี ${mr.name}`;
+  $('#meBarStatus').textContent = b ? `วันนี้เช็คชื่อแล้ว ${hhmm(b.checked_at)} น.${b.status==='late'?' (สาย)':''}` : 'วันนี้ยังไม่ได้เช็คชื่อ';
+  $('#meBarIn').hidden=!!b;
+}
 
 /* ============ routing ============ */
 function route(){
-  const wantAdmin = location.hash==='#admin';
+  const h=location.hash;
+  const wantAdmin=h==='#admin', wantMe=h==='#me', wantLogin=h==='#login';
   const showAdmin = wantAdmin && S.isAdmin;
-  const showLogin = wantAdmin && !S.isAdmin;
-  $('#viewPublic').hidden = wantAdmin;
+  const showMe = wantMe && !!S.session;
+  const showLogin = wantLogin || (wantAdmin && !S.isAdmin) || (wantMe && !S.session);
+  $('#viewPublic').hidden = showAdmin||showMe||showLogin;
   $('#viewAdmin').hidden = !showAdmin;
+  $('#viewMe').hidden = !showMe;
   $('#viewLogin').hidden = !showLogin;
-  $('#publicLink').hidden = !wantAdmin;
-  $('#adminLink').hidden = wantAdmin || !S.isAdmin;
-  $('#loginBtn').hidden = wantAdmin || !!S.session;
-  $('#heroSub').textContent = showAdmin ? 'หน้าผู้สอน · จัดการรายชื่อ ดูผลการเช็คชื่อ และลายเซ็น' : 'แตะชื่อของคุณ → เซ็นลายเซ็น → กดยืนยัน ระบบจะบันทึกเวลาที่มาให้อัตโนมัติ';
+  $('#publicLink').hidden = !(showAdmin||showMe||showLogin);
+  $('#adminLink').hidden = showAdmin || !S.isAdmin;
+  $('#loginBtn').hidden = !!S.session || showLogin;
+  $('#meLink').hidden = !S.session || showMe;
+  $('#heroSub').textContent = showAdmin ? 'หน้าผู้สอน · จัดการรายชื่อ ดูผลการเช็คชื่อ และลายเซ็น' : showMe ? 'หน้าของฉัน · ประวัติการเข้าเรียนและการเช็คชื่อ' : 'แตะชื่อของคุณ → เซ็นลายเซ็น → กดยืนยัน ระบบจะบันทึกเวลาที่มาให้อัตโนมัติ';
   if (showLogin){
-    $('#loginMsg').textContent = S.session ? `บัญชี ${S.session.user.email} ยังไม่ได้รับสิทธิ์ผู้สอน — กรุณาเข้าสู่ระบบด้วยบัญชีที่ได้รับสิทธิ์` : '';
-    if (S.session){ $('#googleBtn').lastChild.textContent='เปลี่ยนบัญชี Google'; } else { $('#googleBtn').lastChild.textContent='เข้าสู่ระบบด้วย Google'; }
+    if (!S._authInit){ S._authInit=true; setAuthMode(S.authMode); }
+    if (wantAdmin && S.session && !S.isAdmin) authMsg(`บัญชี ${S.session.user.email} ยังไม่ได้รับสิทธิ์ผู้สอน`, 'err');
   }
   if (showAdmin) showTab(S.adminTab);
+  if (showMe) renderMe();
+  renderMeBar();
 }
 window.addEventListener('hashchange', route);
 
@@ -706,7 +960,7 @@ function showTab(t){
   S.adminTab=t; $$('#tabs .tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   $$('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==t);
   if (t==='today') loadDay();
-  if (t==='roster') renderRoster();
+  if (t==='roster'){ renderRoster(); loadProfiles().then(renderRoster); }
   if (t==='settings') fillSettings();
   if (t==='report' && !S.report) runReport();
 }
@@ -761,8 +1015,10 @@ $('#rq').addEventListener('input',e=>{ S.rq=e.target.value; renderRoster(); });
 function renderRoster(){
   const q=norm(S.rq);
   const rows=S.roster.filter(r=>!q||[r.id,r.name,r.org,r.name_en].some(v=>norm(v).includes(q)));
-  $('#rTable').innerHTML=`<thead><tr><th>ลำดับ</th><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>หน่วยงาน</th><th>ชื่อภาษาอังกฤษ</th><th>แสดง</th><th></th></tr></thead><tbody>${
+  const acc={}; (S.profiles||[]).forEach(p=>{ if(p.roster_id) acc[p.roster_id]=p; });
+  $('#rTable').innerHTML=`<thead><tr><th>ลำดับ</th><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>หน่วยงาน</th><th>ชื่อภาษาอังกฤษ</th><th>บัญชีที่ผูก</th><th>แสดง</th><th></th></tr></thead><tbody>${
     rows.map(r=>`<tr><td>${r.sort}</td><td>${esc(r.id)}</td><td><b>${esc(r.name)}</b></td><td>${esc(r.org)}</td><td>${esc(r.name_en)}</td>
+      <td>${acc[r.id]?`<span class="tag ok" title="${esc(acc[r.id].email)}">✓ ${esc(acc[r.id].email||'มีบัญชี')}</span> <button class="linkbtn" data-unlink="${esc(acc[r.id].user_id)}">ยกเลิก</button>`:'<span class="tag off">ยังไม่มี</span>'}</td>
       <td><label class="switch"><input type="checkbox" data-active="${esc(r.id)}" ${r.active?'checked':''}><span></span></label></td>
       <td style="white-space:nowrap"><button class="btn btn-s btn-sm" data-edit="${esc(r.id)}">แก้ไข</button> <button class="btn btn-d btn-sm" data-del="${esc(r.id)}">ลบ</button></td></tr>`).join('')
   }</tbody>`;
@@ -787,7 +1043,11 @@ $('#eSave').addEventListener('click',async()=>{
   closeOv($('#ovEdit')); toast('บันทึกแล้ว'); await loadRoster(); renderRoster(); renderPublic();
 });
 $('#rTable').addEventListener('click',async e=>{
-  const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]');
+  const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]'), ul=e.target.closest('[data-unlink]');
+  if (ul){ const p=(S.profiles||[]).find(x=>x.user_id===ul.dataset.unlink); if(!p) return;
+    if(!(await confirmBox(`ยกเลิกการผูกบัญชี ${p.email||''} ออกจากชื่อนี้?`,'ยกเลิกการผูก'))) return;
+    const { error } = await sb.from('profiles').delete().eq('user_id',p.user_id);
+    if (error){ toast('ไม่สำเร็จ'); return; } toast('ยกเลิกการผูกแล้ว'); await loadProfiles(); renderRoster(); return; }
   if (ed) openEdit(S.roster.find(r=>r.id===ed.dataset.edit));
   if (del){ const r=S.roster.find(x=>x.id===del.dataset.del);
     if(!(await confirmBox(`ลบ “${r.name}” และประวัติการเช็คชื่อทั้งหมดของคนนี้?`,'ลบ'))) return;
@@ -912,7 +1172,7 @@ async function loadBuild(){
 async function boot(){
   initVersion(); tickClock(); setInterval(tickClock,1000);
   if (!sb){ setBadge('ยังไม่ได้ตั้งค่า Supabase','warn'); banner('ไม่พบการตั้งค่า Supabase ใน config.js หรือโหลดไลบรารีไม่สำเร็จ'); renderPublic(); route(); return; }
-  sb.auth.onAuthStateChange((event, session)=>{ if (event==='SIGNED_IN'||event==='SIGNED_OUT'||event==='INITIAL_SESSION') setTimeout(()=>onSession(session),0); });
+  sb.auth.onAuthStateChange((event, session)=>{ if (['SIGNED_IN','SIGNED_OUT','INITIAL_SESSION','PASSWORD_RECOVERY','USER_UPDATED'].includes(event)) setTimeout(()=>onSession(session, event),0); });
   await refreshPublic(true);
   setInterval(()=>{ if(!document.hidden) refreshPublic(); }, SYNC_MS);
   setInterval(()=>{ if(!document.hidden) refreshPublic(true); }, SYNC_MS*6);
